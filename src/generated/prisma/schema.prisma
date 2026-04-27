@@ -1,0 +1,519 @@
+// prisma/schema.prisma
+// Digital Menu Platform — Full Database Schema
+// Using SQLite for local development (switch to PostgreSQL for production)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ═══════════════════════════════════════════════════════
+// 1. Authentication & Users
+// ═══════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  image         String?
+  phone         String?
+  role          String    @default("RESTAURANT_OWNER") // ADMIN | RESTAURANT_OWNER
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  restaurants   Restaurant[]
+  subscriptions Subscription[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ═══════════════════════════════════════════════════════
+// 2. Restaurants
+// ═══════════════════════════════════════════════════════
+
+model Restaurant {
+  id       String  @id @default(cuid())
+  userId   String
+  slug     String  @unique
+  isActive Boolean @default(true)
+
+  nameAr String
+  nameEn String?
+  nameTr String?
+  descAr String?
+  descEn String?
+  descTr String?
+
+  logoUrl        String?
+  primaryColor   String  @default("#FF6B35")
+  secondaryColor String  @default("#1A1A2E")
+
+  whatsapp  String?
+  phone     String?
+  instagram String?
+  facebook  String?
+  tiktok    String?
+  twitter   String?
+  telegram  String?
+
+  address         String?
+  latitude        Float?
+  longitude       Float?
+  googleMapsUrl   String?
+  googleReviewUrl String?
+
+  workingHours String? // JSON string
+
+  currency       String @default("SAR")
+  taxPercent     Float  @default(0)
+  servicePercent Float  @default(0)
+  enabledLangs   String @default("ar") // comma-separated: "ar,en,tr"
+  defaultLang    String @default("ar")
+  menuViewMode   String @default("LIST") // LIST | GRID
+
+  // Owner permissions (controlled by Admin)
+  ownerCanEditMenu     Boolean @default(false)
+  ownerCanEditBranding Boolean @default(false)
+  ownerCanEditSettings Boolean @default(false)
+  ownerCanManageTables Boolean @default(false)
+  ownerCanDeleteOrders Boolean @default(false)
+
+  aboutAr String?
+  aboutEn String?
+  aboutTr String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories  Category[]
+  coverImages CoverImage[]
+  tables      Table[]
+  orders      Order[]
+  analytics   AnalyticsEvent[]
+  ratings     Rating[]
+
+  @@index([userId])
+  @@index([slug])
+  @@map("restaurants")
+}
+
+// ═══════════════════════════════════════════════════════
+// 3. Cover Images (Slider)
+// ═══════════════════════════════════════════════════════
+
+model CoverImage {
+  id           String  @id @default(cuid())
+  restaurantId String
+  imageUrl     String
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@map("cover_images")
+}
+
+// ═══════════════════════════════════════════════════════
+// 4. Categories
+// ═══════════════════════════════════════════════════════
+
+model Category {
+  id           String @id @default(cuid())
+  restaurantId String
+
+  nameAr String
+  nameEn String?
+  nameTr String?
+
+  iconUrl String?
+  emoji   String?
+
+  sortOrder Int     @default(0)
+  isVisible Boolean @default(true)
+
+  // Scheduled menu: auto-show/hide by time of day
+  scheduleType  String? // "ALL_DAY" | "BREAKFAST" | "LUNCH" | "DINNER" | "CUSTOM"
+  scheduleStart String? // "06:00"
+  scheduleEnd   String? // "11:00"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      Item[]
+
+  @@index([restaurantId])
+  @@index([restaurantId, sortOrder])
+  @@map("categories")
+}
+
+// ═══════════════════════════════════════════════════════
+// 5. Menu Items
+// ═══════════════════════════════════════════════════════
+
+model Item {
+  id         String @id @default(cuid())
+  categoryId String
+
+  nameAr String
+  nameEn String?
+  nameTr String?
+
+  descAr String?
+  descEn String?
+  descTr String?
+
+  price         Float
+  discountPrice Float?
+
+  calories  Int?
+  prepTime  Int?
+  allergens String?
+
+  badge       String? // NEW | POPULAR | OFFER
+  isAvailable Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  images     ItemImage[]
+  sizes      ItemSize[]
+  extras     ItemExtra[]
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([categoryId, sortOrder])
+  @@map("items")
+}
+
+// ═══════════════════════════════════════════════════════
+// 6. Item Images (Gallery)
+// ═══════════════════════════════════════════════════════
+
+model ItemImage {
+  id        String @id @default(cuid())
+  itemId    String
+  imageUrl  String
+  sortOrder Int    @default(0)
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("item_images")
+}
+
+// ═══════════════════════════════════════════════════════
+// 7. Item Sizes
+// ═══════════════════════════════════════════════════════
+
+model ItemSize {
+  id     String @id @default(cuid())
+  itemId String
+
+  nameAr    String
+  nameEn    String?
+  nameTr    String?
+  price     Float
+  sortOrder Int     @default(0)
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("item_sizes")
+}
+
+// ═══════════════════════════════════════════════════════
+// 8. Item Extras (Add-ons)
+// ═══════════════════════════════════════════════════════
+
+model ItemExtra {
+  id     String @id @default(cuid())
+  itemId String
+
+  nameAr    String
+  nameEn    String?
+  nameTr    String?
+  price     Float
+  sortOrder Int     @default(0)
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("item_extras")
+}
+
+// ═══════════════════════════════════════════════════════
+// 9. Tables
+// ═══════════════════════════════════════════════════════
+
+model Table {
+  id           String @id @default(cuid())
+  restaurantId String
+
+  tableNumber String
+  qrCodeUrl   String?
+  isActive    Boolean @default(true)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orders     Order[]
+
+  @@unique([restaurantId, tableNumber])
+  @@index([restaurantId])
+  @@map("tables")
+}
+
+// ═══════════════════════════════════════════════════════
+// 10. Orders
+// ═══════════════════════════════════════════════════════
+
+model Order {
+  id           String @id @default(cuid())
+  restaurantId String
+  orderNumber  Int
+
+  customerName  String?
+  customerPhone String?
+
+  orderType       String // DINE_IN | TAKEAWAY | DELIVERY | SCHEDULED
+  tableId         String?
+  deliveryAddress String?
+  deliveryLat     Float?
+  deliveryLng     Float?
+  scheduledAt     DateTime?
+
+  subtotal      Float
+  taxAmount     Float @default(0)
+  serviceAmount Float @default(0)
+  total         Float
+
+  status String  @default("NEW") // NEW | PREPARING | READY | COMPLETED | CANCELLED
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table      Table?      @relation(fields: [tableId], references: [id])
+  items      OrderItem[]
+
+  @@index([restaurantId])
+  @@index([restaurantId, status])
+  @@index([restaurantId, createdAt])
+  @@map("orders")
+}
+
+// ═══════════════════════════════════════════════════════
+// 11. Order Items
+// ═══════════════════════════════════════════════════════
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  itemId  String
+
+  itemName   String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+
+  sizeName String?
+  extras   String? // JSON array: ["extra1","extra2"]
+  notes    String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ═══════════════════════════════════════════════════════
+// 12. Subscription Plans
+// ═══════════════════════════════════════════════════════
+
+model Plan {
+  id     String  @id @default(cuid())
+  nameAr String
+  nameEn String?
+  slug   String  @unique
+
+  priceMonthly Float
+  priceYearly  Float
+
+  maxItems      Int?
+  maxCategories Int?
+
+  noAds             Boolean @default(false)
+  advancedAnalytics Boolean @default(false)
+  seoEnabled        Boolean @default(false)
+  multiViewMode     Boolean @default(false)
+  multiLanguage     Boolean @default(false)
+  aboutPage         Boolean @default(false)
+  workingHours      Boolean @default(false)
+  reviews           Boolean @default(false)
+  orderSystem       Boolean @default(false)
+  tableManagement   Boolean @default(false)
+  multiCoverImages  Boolean @default(false)
+  multiItemImages   Boolean @default(false)
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String
+  planId String
+
+  status       String @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED | TRIAL
+  billingCycle String @default("MONTHLY") // MONTHLY | YEARLY
+
+  startDate DateTime @default(now())
+  endDate   DateTime
+
+  paymentMethod String?
+  paymentId     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+// ═══════════════════════════════════════════════════════
+// 13. Analytics
+// ═══════════════════════════════════════════════════════
+
+model AnalyticsEvent {
+  id           String @id @default(cuid())
+  restaurantId String
+
+  eventType String // MENU_VIEW | CATEGORY_VIEW | ITEM_VIEW | ITEM_ADD_TO_CART | ORDER_PLACED | QR_SCAN
+
+  categoryId String?
+  itemId     String?
+
+  visitorIp String?
+  userAgent String?
+  referrer  String?
+  country   String?
+
+  createdAt DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([restaurantId, eventType])
+  @@index([restaurantId, createdAt])
+  @@map("analytics_events")
+}
+
+// ═══════════════════════════════════════════════════════
+// 14. Notifications (Real-time)
+// ═══════════════════════════════════════════════════════
+
+model Notification {
+  id           String  @id @default(cuid())
+  userId       String
+  restaurantId String?
+
+  type  String // NEW_ORDER | ORDER_UPDATED | SYSTEM
+  title String
+  body  String
+  data  String? // JSON string
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ═════════════════════════════════════════════════════════
+// 15. Ratings & Reviews
+// ═════════════════════════════════════════════════════════
+
+model Rating {
+  id           String  @id @default(cuid())
+  restaurantId String
+  itemId       String?
+  orderId      String?
+
+  stars        Int // 1-5
+  comment      String?
+  customerName String?
+
+  createdAt DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([itemId])
+  @@map("ratings")
+}
