@@ -5,11 +5,9 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // PostgreSQL: pass datasourceUrl directly
+  // Production (PostgreSQL) — connection handled by prisma.config.ts
   if (process.env.DATABASE_URL?.startsWith("postgresql")) {
-    return new PrismaClient({
-      datasourceUrl: process.env.DATABASE_URL,
-    });
+    return new PrismaClient();
   }
 
   // Local dev with SQLite adapter
@@ -19,7 +17,6 @@ function createPrismaClient() {
     const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
     return new PrismaClient({ adapter });
   } catch {
-    // Fallback: standard client
     return new PrismaClient();
   }
 }
