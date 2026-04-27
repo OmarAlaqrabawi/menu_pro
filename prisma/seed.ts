@@ -2,21 +2,15 @@ import { PrismaClient } from "../src/generated/prisma";
 import { hashSync } from "bcryptjs";
 
 function createClient() {
-  if (process.env.DATABASE_URL?.startsWith("postgresql")) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaPg } = require("@prisma/adapter-pg");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Pool } = require("pg");
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    });
-    const adapter = new PrismaPg({ pool });
-    return new PrismaClient({ adapter });
-  }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-  const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pool } = require("pg");
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+  const adapter = new PrismaPg({ pool });
   return new PrismaClient({ adapter });
 }
 
@@ -28,10 +22,8 @@ async function main() {
   // ═══════════════════════════════════════════════════════
   // 1. Users
   // ═══════════════════════════════════════════════════════
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@menupro.com" },
-    update: {},
-    create: {
+  const admin = await prisma.user.create({
+    data: {
       name: "عمر",
       email: "admin@menupro.com",
       passwordHash: hashSync("Admin@123", 10),
@@ -41,10 +33,8 @@ async function main() {
   });
   console.log("✅ Admin user created:", admin.email);
 
-  const owner1 = await prisma.user.upsert({
-    where: { email: "moh@pizza.com" },
-    update: {},
-    create: {
+  const owner1 = await prisma.user.create({
+    data: {
       name: "محمد يوسف",
       email: "moh@pizza.com",
       passwordHash: hashSync("Owner@123", 10),
@@ -53,10 +43,8 @@ async function main() {
     },
   });
 
-  const owner2 = await prisma.user.upsert({
-    where: { email: "m@chicken.com" },
-    update: {},
-    create: {
+  const owner2 = await prisma.user.create({
+    data: {
       name: "محمد أحمد",
       email: "m@chicken.com",
       passwordHash: hashSync("Owner@123", 10),
@@ -65,10 +53,8 @@ async function main() {
     },
   });
 
-  const owner3 = await prisma.user.upsert({
-    where: { email: "sara@cafe.com" },
-    update: {},
-    create: {
+  const owner3 = await prisma.user.create({
+    data: {
       name: "سارة علي",
       email: "sara@cafe.com",
       passwordHash: hashSync("Owner@123", 10),
@@ -81,10 +67,8 @@ async function main() {
   // ═══════════════════════════════════════════════════════
   // 2. Subscription Plans
   // ═══════════════════════════════════════════════════════
-  const basicPlan = await prisma.plan.upsert({
-    where: { slug: "basic" },
-    update: {},
-    create: {
+  const basicPlan = await prisma.plan.create({
+    data: {
       nameAr: "الأساسية",
       nameEn: "Basic",
       slug: "basic",
@@ -96,10 +80,8 @@ async function main() {
     },
   });
 
-  const proPlan = await prisma.plan.upsert({
-    where: { slug: "pro" },
-    update: {},
-    create: {
+  const proPlan = await prisma.plan.create({
+    data: {
       nameAr: "الاحترافية",
       nameEn: "Pro",
       slug: "pro",
@@ -121,10 +103,8 @@ async function main() {
     },
   });
 
-  const enterprisePlan = await prisma.plan.upsert({
-    where: { slug: "enterprise" },
-    update: {},
-    create: {
+  const enterprisePlan = await prisma.plan.create({
+    data: {
       nameAr: "المؤسسات",
       nameEn: "Enterprise",
       slug: "enterprise",
