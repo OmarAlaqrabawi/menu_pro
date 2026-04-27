@@ -35,14 +35,20 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    const result = await loginAction(formData);
+    try {
+      const result = await loginAction(formData);
 
-    if (result.success) {
+      if (result.success) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError(result.error || "حدث خطأ أثناء تسجيل الدخول");
+        setLoading(false);
+      }
+    } catch {
+      // signIn succeeded and threw NEXT_REDIRECT — just redirect
       router.push("/dashboard");
       router.refresh();
-    } else {
-      setError(result.error || "حدث خطأ أثناء تسجيل الدخول");
-      setLoading(false);
     }
   };
 

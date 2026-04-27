@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { loginSchema, registerSchema } from "@/validators/auth";
 import type { LoginInput, RegisterInput } from "@/validators/auth";
+import { AuthError } from "next-auth";
 
 export type ActionResult = {
   success: boolean;
@@ -27,12 +28,12 @@ export async function loginAction(data: LoginInput): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
-    // NextAuth v5 throws NEXT_REDIRECT on success — let it through
-    if (error instanceof Error && (error.message === "NEXT_REDIRECT" || (error as { digest?: string }).digest?.startsWith("NEXT_REDIRECT"))) {
-      return { success: true };
+    // AuthError = wrong credentials
+    if (error instanceof AuthError) {
+      return { success: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
     }
-    console.error("[LOGIN_ACTION] Error:", error);
-    return { success: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
+    // NEXT_REDIRECT = login succeeded, NextAuth is redirecting
+    throw error;
   }
 }
 
