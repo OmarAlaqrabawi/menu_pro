@@ -20,6 +20,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [csrfToken, setCsrfToken] = useState("");
 
   // Handle NextAuth error redirects
   useEffect(() => {
@@ -27,39 +28,44 @@ function LoginForm() {
     if (authError) {
       setError(authErrors[authError] || authErrors.Default);
     }
+    // Fetch CSRF token on mount
+    fetch("/api/auth/csrf")
+      .then((r) => r.json())
+      .then((data) => setCsrfToken(data.csrfToken))
+      .catch(() => {});
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.email || !formData.password) {
+      setError("الرجاء إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
     setLoading(true);
     setError("");
 
     try {
-      // Get CSRF token
-      const csrfRes = await fetch("/api/auth/csrf");
-      const { csrfToken } = await csrfRes.json();
-
-      // Sign in via POST
       const res = await fetch("/api/auth/callback/credentials", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           email: formData.email,
           password: formData.password,
-          csrfToken,
+          csrfToken: csrfToken,
           json: "true",
         }),
         redirect: "follow",
       });
 
-      const url = new URL(res.url);
-      if (url.searchParams.has("error")) {
+      const finalUrl = res.url;
+      if (finalUrl.includes("error")) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
         setLoading(false);
       } else {
         window.location.href = "/dashboard";
       }
-    } catch {
+    } catch (err) {
+      console.error("Login error:", err);
       setError("حدث خطأ أثناء تسجيل الدخول");
       setLoading(false);
     }
