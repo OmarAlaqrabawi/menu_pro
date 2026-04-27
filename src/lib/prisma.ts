@@ -9,7 +9,13 @@ function createPrismaClient() {
   if (process.env.DATABASE_URL?.startsWith("postgresql")) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaPg } = require("@prisma/adapter-pg");
-    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Pool } = require("pg");
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    });
+    const adapter = new PrismaPg({ pool });
     return new PrismaClient({ adapter });
   }
 
@@ -22,7 +28,13 @@ function createPrismaClient() {
   } catch {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaPg } = require("@prisma/adapter-pg");
-    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Pool } = require("pg");
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    });
+    const adapter = new PrismaPg({ pool });
     return new PrismaClient({ adapter });
   }
 }
