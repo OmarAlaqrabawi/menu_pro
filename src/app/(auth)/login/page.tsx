@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,18 +35,29 @@ function LoginForm() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
+      // Get CSRF token
+      const csrfRes = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfRes.json();
+
+      // Sign in via POST
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          email: formData.email,
+          password: formData.password,
+          csrfToken,
+          json: "true",
+        }),
+        redirect: "follow",
       });
 
-      if (result?.error) {
+      const url = new URL(res.url);
+      if (url.searchParams.has("error")) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
         setLoading(false);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        window.location.href = "/dashboard";
       }
     } catch {
       setError("حدث خطأ أثناء تسجيل الدخول");
