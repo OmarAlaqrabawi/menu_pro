@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/ratings/route.ts
 // Public API — submit and fetch ratings
 import { NextResponse } from "next/server";

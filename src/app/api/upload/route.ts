@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/upload/route.ts
 // Image upload API — processes and saves images to /public/uploads/
 import { NextResponse } from "next/server";

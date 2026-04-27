@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/orders/check/route.ts
 // Endpoint for polling new order count (used by notification system)
 import { NextResponse } from "next/server";

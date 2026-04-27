@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/menu/[slug]/route.ts
 // Public API — no auth required. Returns menu data for customer-facing page.
 import { NextResponse } from "next/server";

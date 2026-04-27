@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/analytics/track/route.ts
 // Public API — no auth required. Tracks analytics events from customer menu.
 import { NextResponse } from "next/server";

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/orders/route.ts
 // Public API — no auth required. Creates an order from customer menu.
 import { NextResponse } from "next/server";

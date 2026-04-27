@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/menu/export/route.ts
 // Export menu data as JSON (can be converted to Excel on client)
 import { NextResponse } from "next/server";

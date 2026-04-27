@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/menu/import/route.ts
 // Import menu data from JSON (parsed from Excel on client)
 import { NextResponse } from "next/server";

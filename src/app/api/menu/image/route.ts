@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/menu/image/route.ts
 // Create/delete item images
 import { NextResponse } from "next/server";
