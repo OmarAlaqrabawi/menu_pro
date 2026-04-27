@@ -2,11 +2,11 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { loginAction } from "@/actions/auth";
 
 const authErrors: Record<string, string> = {
   Configuration: "خطأ في إعدادات تسجيل الدخول، تواصل مع الدعم الفني",
@@ -36,19 +36,22 @@ function LoginForm() {
     setError("");
 
     try {
-      const result = await loginAction(formData);
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
 
-      if (result.success) {
+      if (result?.error) {
+        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+        setLoading(false);
+      } else {
         router.push("/dashboard");
         router.refresh();
-      } else {
-        setError(result.error || "حدث خطأ أثناء تسجيل الدخول");
-        setLoading(false);
       }
     } catch {
-      // signIn succeeded and threw NEXT_REDIRECT — just redirect
-      router.push("/dashboard");
-      router.refresh();
+      setError("حدث خطأ أثناء تسجيل الدخول");
+      setLoading(false);
     }
   };
 
