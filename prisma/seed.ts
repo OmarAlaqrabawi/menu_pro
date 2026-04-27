@@ -1,12 +1,20 @@
-// prisma/seed.ts
-// Comprehensive seed data for MenuPro platform
-
 import { PrismaClient } from "../src/generated/prisma";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { hashSync } from "bcryptjs";
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-const prisma = new PrismaClient({ adapter });
+function createClient() {
+  if (process.env.DATABASE_URL?.startsWith("postgresql")) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaPg } = require("@prisma/adapter-pg");
+    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+    return new PrismaClient({ adapter });
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+  const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createClient();
 
 async function main() {
   console.log("🌱 Seeding MenuPro database...\n");
