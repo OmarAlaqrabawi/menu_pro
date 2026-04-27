@@ -26,7 +26,12 @@ export async function loginAction(data: LoginInput): Promise<ActionResult> {
     });
 
     return { success: true };
-  } catch {
+  } catch (error) {
+    // NextAuth v5 throws NEXT_REDIRECT on success — let it through
+    if (error instanceof Error && (error.message === "NEXT_REDIRECT" || (error as { digest?: string }).digest?.startsWith("NEXT_REDIRECT"))) {
+      return { success: true };
+    }
+    console.error("[LOGIN_ACTION] Error:", error);
     return { success: false, error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
   }
 }
