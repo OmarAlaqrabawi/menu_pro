@@ -471,70 +471,65 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
   return (
     <div style={{ minHeight: "100vh", background: dm.bg, paddingBottom: cart.length > 0 ? 90 : 0, transition: "background 0.3s" }} dir="rtl">
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
-        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-        .menu-item-card{transition:all 0.25s cubic-bezier(0.4,0,0.2,1)}
-        .menu-item-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,0.08)!important}
-        .menu-item-card:active{transform:scale(0.98)}
-        .cat-tab{transition:all 0.25s ease}
-        .cat-tab:hover{transform:translateY(-1px)}
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+        *{font-family:'Tajawal',sans-serif!important}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes scaleIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+        @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+        .menu-item-card{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+        .menu-item-card:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 16px 40px rgba(0,0,0,0.12)!important}
+        .menu-item-card:active{transform:scale(0.97)}
+        .cat-tab{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)}
+        .cat-tab:hover{transform:translateY(-2px) scale(1.03)}
+        ::-webkit-scrollbar{width:0;height:0}
+        .add-btn:hover{filter:brightness(1.1);transform:scale(1.02)}
+        @media(min-width:768px){
+          .desktop-layout{display:flex!important;max-width:1100px;margin:0 auto;gap:32px;padding:24px 32px}
+          .desktop-sidebar{width:240px;flex-shrink:0;position:sticky;top:80px;height:fit-content;display:block!important}
+          .desktop-main{flex:1;min-width:0}
+          .items-grid{grid-template-columns:repeat(3,1fr)!important}
+          .mobile-tabs{display:none!important}
+        }
+        @media(max-width:767px){
+          .desktop-sidebar{display:none!important}
+          .items-grid{grid-template-columns:repeat(2,1fr)!important}
+        }
       `}</style>
 
       {/* ─── Restaurant Header ─── */}
       <div style={{
-        background: `linear-gradient(160deg, ${pc}, ${sc}, ${pc}dd)`,
-        padding: "48px 20px 40px",
+        background: `linear-gradient(145deg, ${pc} 0%, ${sc} 60%, ${pc}cc 100%)`,
+        padding: "56px 24px 48px",
         position: "relative",
         overflow: "hidden",
       }}>
-        {/* Decorative circles */}
-        <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
-        <div style={{ position: "absolute", top: 30, left: "20%", width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.03)" }} />
-        {/* Dot pattern */}
-        <div style={{ position: "absolute", inset: 0, opacity: 0.04, backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          style={{
-            position: "absolute", top: 16, left: 16, zIndex: 10,
-            width: 36, height: 36, borderRadius: "50%",
-            background: "rgba(255,255,255,0.15)", border: "none",
-            backdropFilter: "blur(8px)", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, transition: "transform 0.3s",
-          }}
-        >
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 40%)" }} />
+        <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        <button onClick={() => setDarkMode(!darkMode)} style={{ position: "absolute", top: 16, left: 16, zIndex: 10, width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(12px)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
           {darkMode ? "☀️" : "🌙"}
         </button>
-
-        <div style={{ position: "relative", maxWidth: 600, margin: "0 auto", textAlign: "center", animation: "fadeUp 0.5s ease-out" }}>
+        <div style={{ position: "relative", maxWidth: 680, margin: "0 auto", textAlign: "center", animation: "fadeUp 0.5s ease-out" }}>
           {restaurant.logoUrl ? (
-            <img src={restaurant.logoUrl} alt={restaurant.nameAr} style={{
-              width: 76, height: 76, borderRadius: 22, objectFit: "cover",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.2), 0 0 0 4px rgba(255,255,255,0.15)",
-              animation: "scaleIn 0.4s ease-out",
-            }} />
+            <img src={restaurant.logoUrl} alt={restaurant.nameAr} style={{ width: 88, height: 88, borderRadius: 26, objectFit: "cover", boxShadow: "0 16px 48px rgba(0,0,0,0.25), 0 0 0 4px rgba(255,255,255,0.2)", marginBottom: 18, animation: "scaleIn 0.4s ease-out" }} />
           ) : (
-            <div style={{
-              width: 76, height: 76, borderRadius: 22, background: "rgba(255,255,255,0.95)", margin: "0 auto 18px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 32, fontWeight: 800, color: pc,
-              boxShadow: "0 12px 32px rgba(0,0,0,0.2), 0 0 0 4px rgba(255,255,255,0.15)",
-              animation: "scaleIn 0.4s ease-out",
-            }}>
+            <div style={{ width: 88, height: 88, borderRadius: 26, background: "rgba(255,255,255,0.95)", margin: "0 auto 18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, fontWeight: 900, color: pc, boxShadow: "0 16px 48px rgba(0,0,0,0.25), 0 0 0 4px rgba(255,255,255,0.2)", animation: "scaleIn 0.4s ease-out" }}>
               {restaurant.nameAr.charAt(0)}
             </div>
           )}
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: "0 0 6px", letterSpacing: "-0.01em" }}>{restaurant.nameAr}</h1>
-          {restaurant.nameEn && <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: "0 0 4px", fontWeight: 500, letterSpacing: "0.02em" }}>{restaurant.nameEn}</p>}
-          {restaurant.descAr && <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "10px 0 0", lineHeight: 1.6, maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>{restaurant.descAr}</p>}
+          <h1 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 6px", textShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>{restaurant.nameAr}</h1>
+          {restaurant.nameEn && <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: "0 0 6px", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>{restaurant.nameEn}</p>}
+          {restaurant.descAr && <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "12px auto 0", lineHeight: 1.7, maxWidth: 340 }}>{restaurant.descAr}</p>}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
+            {restaurant.whatsapp && <a href={`https://wa.me/${restaurant.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:24, background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.3)", color:"#fff", fontSize:13, fontWeight:600, textDecoration:"none", backdropFilter:"blur(8px)" }}>💬 واتساب</a>}
+            {restaurant.instagram && <a href={`https://instagram.com/${restaurant.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:24, background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.3)", color:"#fff", fontSize:13, fontWeight:600, textDecoration:"none", backdropFilter:"blur(8px)" }}>📷 انستقرام</a>}
+            {restaurant.address && <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:24, background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.85)", fontSize:13 }}>📍 {restaurant.address}</span>}
+          </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px" }} className="desktop-layout">
 
         {/* ─── Search Bar ─── */}
         <div style={{ padding: "12px 0 4px" }}>
@@ -657,10 +652,10 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                 </h2>
 
                 {/* Grid Layout */}
-                <div style={{
+                <div className="items-grid" style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: 12,
+                  gap: 16,
                 }}>
                   {currentCategory.items.map((item, idx) => (
                     <div
@@ -674,10 +669,10 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                         trackEvent("ITEM_VIEW", { itemId: item.id });
                       }}
                       style={{
-                        background: dm.card, borderRadius: 16, cursor: "pointer",
+                        background: dm.card, borderRadius: 20, cursor: "pointer",
                         border: `1px solid ${dm.border}`,
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
-                        animation: `fadeUp 0.3s ease-out ${idx * 60}ms both`,
+                        boxShadow: darkMode ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.06)",
+                        animation: `fadeUp 0.4s ease-out ${idx * 50}ms both`,
                         overflow: "hidden", position: "relative",
                       }}
                     >
@@ -741,52 +736,19 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                       </div>
 
                       {/* Item Info */}
-                      <div style={{ padding: "12px 14px 14px" }}>
-                        <p style={{
-                          fontSize: 14, fontWeight: 700, color: dm.text,
-                          margin: "0 0 2px", lineHeight: 1.4,
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}>{item.nameAr}</p>
-
-                        {item.descAr && (
-                          <p style={{
-                            fontSize: 11, color: dm.textSec, margin: "0 0 8px",
-                            lineHeight: 1.5, display: "-webkit-box",
-                            WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                          }}>{item.descAr}</p>
-                        )}
-
-                        <div style={{
-                          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4,
-                        }}>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                            <span style={{ fontSize: 18, fontWeight: 800, color: pc }}>{item.discountPrice || item.price}</span>
-                            <span style={{ fontSize: 10, color: dm.textSec }}>{currency}</span>
-                            {item.discountPrice && (
-                              <span style={{ fontSize: 11, color: "#bbb", textDecoration: "line-through" }}>{item.price}</span>
-                            )}
+                      <div style={{ padding: "14px 16px 16px" }}>
+                        <p style={{ fontSize: 15, fontWeight: 800, color: dm.text, margin: "0 0 4px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.nameAr}</p>
+                        {item.descAr && <p style={{ fontSize: 12, color: dm.textSec, margin: "0 0 10px", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.descAr}</p>}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+                              <span style={{ fontSize: 20, fontWeight: 900, color: pc }}>{item.discountPrice || item.price}</span>
+                              <span style={{ fontSize: 11, color: dm.textSec, fontWeight: 600 }}>{currency}</span>
+                            </div>
+                            {item.discountPrice && <span style={{ fontSize: 11, color: "#bbb", textDecoration: "line-through" }}>{item.price}</span>}
                           </div>
-
-                          {/* Quick info */}
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            {item.prepTime ? (
-                              <span style={{
-                                fontSize: 9, display: "inline-flex", alignItems: "center", gap: 2,
-                                color: dm.textSec, background: darkMode ? "rgba(255,255,255,0.06)" : "#f3f4f6",
-                                padding: "2px 6px", borderRadius: 6,
-                              }}>
-                                <Clock style={{ width: 9, height: 9 }} /> {item.prepTime}د
-                              </span>
-                            ) : null}
-                            {item.calories ? (
-                              <span style={{
-                                fontSize: 9, display: "inline-flex", alignItems: "center", gap: 2,
-                                color: dm.textSec, background: darkMode ? "rgba(255,255,255,0.06)" : "#f3f4f6",
-                                padding: "2px 6px", borderRadius: 6,
-                              }}>
-                                <Flame style={{ width: 9, height: 9 }} /> {item.calories}
-                              </span>
-                            ) : null}
+                          <div style={{ width: 36, height: 36, borderRadius: 12, background: `linear-gradient(135deg, ${pc}, ${sc})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${pc}40` }}>
+                            <Plus style={{ width: 18, height: 18, color: "#fff" }} />
                           </div>
                         </div>
                       </div>
