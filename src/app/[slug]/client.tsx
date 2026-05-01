@@ -924,143 +924,330 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* ─── Item Detail Bottom Sheet ─── */}
+      {/* ─── Item Detail Bottom Sheet (Premium) ─── */}
       {selectedItem && (
         <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
-          <div onClick={() => setSelectedItem(null)} style={{ position: "absolute", inset: 0, background: dm.overlay, backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
+          <div onClick={() => setSelectedItem(null)} style={{ position: "absolute", inset: 0, background: dm.overlay, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", animation: "fadeIn 0.2s ease" }} />
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            background: dm.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-            maxHeight: "82vh", overflowY: "auto", padding: "12px 20px 36px",
-            animation: "sheetUp 0.35s cubic-bezier(0.32,0.72,0,1)",
-            boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
+            background: dm.sheet, borderTopLeftRadius: 32, borderTopRightRadius: 32,
+            maxHeight: "90vh", overflowY: "auto",
+            animation: "sheetUp 0.4s cubic-bezier(0.32,0.72,0,1)",
+            boxShadow: "0 -12px 60px rgba(0,0,0,0.2)",
           }}>
             {/* Drag handle */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: darkMode ? "rgba(255,255,255,0.15)" : "#ddd", margin: "0 auto 16px" }} />
-            {/* Close */}
-            <button onClick={() => setSelectedItem(null)} style={{ position: "absolute", top: 20, left: 20, background: darkMode ? "rgba(255,255,255,0.1)" : "#f3f4f6", border: "none", borderRadius: 12, padding: 8, cursor: "pointer", transition: "background 0.2s" }}
-              onMouseEnter={e => e.currentTarget.style.background = darkMode ? "rgba(255,255,255,0.15)" : "#e5e7eb"}
-              onMouseLeave={e => e.currentTarget.style.background = darkMode ? "rgba(255,255,255,0.1)" : "#f3f4f6"}
+            <div style={{ width: 40, height: 5, borderRadius: 3, background: darkMode ? "rgba(255,255,255,0.15)" : "#ddd", margin: "10px auto 0", flexShrink: 0 }} />
+
+            {/* ── Hero Image Area ── */}
+            {selectedItem.images.length > 0 ? (
+              <div style={{ position: "relative", margin: "12px 16px 0", borderRadius: 24, overflow: "hidden" }}>
+                <div style={{
+                  display: "flex", gap: 8, overflowX: "auto", scrollSnapType: "x mandatory",
+                  scrollbarWidth: "none", borderRadius: 24,
+                }}>
+                  {selectedItem.images.map((img, idx) => (
+                    <img key={img.id} src={img.imageUrl} alt={selectedItem.nameAr} style={{
+                      width: selectedItem.images.length === 1 ? "100%" : "85%",
+                      height: 240, borderRadius: 24, objectFit: "cover",
+                      flexShrink: 0, scrollSnapAlign: "start",
+                      animation: `scaleIn 0.4s ease-out ${idx * 0.05}s both`,
+                    }} />
+                  ))}
+                </div>
+                {/* Image overlay gradient */}
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
+                  background: "linear-gradient(transparent, rgba(0,0,0,0.3))",
+                  borderBottomLeftRadius: 24, borderBottomRightRadius: 24, pointerEvents: "none",
+                }} />
+                {/* Badge on image */}
+                {selectedItem.badge && (
+                  <div style={{
+                    position: "absolute", top: 14, right: 14,
+                    padding: "6px 14px", borderRadius: 20,
+                    background: selectedItem.badge === "NEW" ? "linear-gradient(135deg, #10b981, #059669)" :
+                               selectedItem.badge === "POPULAR" ? "linear-gradient(135deg, #f59e0b, #d97706)" :
+                               `linear-gradient(135deg, ${pc}, ${sc})`,
+                    color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    backdropFilter: "blur(8px)",
+                  }}>
+                    {selectedItem.badge === "NEW" ? "✨ جديد" : selectedItem.badge === "POPULAR" ? "🔥 الأكثر طلباً" : selectedItem.badge}
+                  </div>
+                )}
+                {/* Image count indicator */}
+                {selectedItem.images.length > 1 && (
+                  <div style={{
+                    position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)",
+                    display: "flex", gap: 6,
+                  }}>
+                    {selectedItem.images.map((_, i) => (
+                      <div key={i} style={{
+                        width: i === 0 ? 20 : 6, height: 6, borderRadius: 3,
+                        background: i === 0 ? "#fff" : "rgba(255,255,255,0.5)",
+                        transition: "all 0.3s",
+                      }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* No image — show elegant placeholder */
+              <div style={{
+                margin: "12px 16px 0", height: 140, borderRadius: 24,
+                background: darkMode
+                  ? `linear-gradient(135deg, ${pc}20, ${sc}30)`
+                  : `linear-gradient(135deg, ${pc}15, ${sc}10)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative", overflow: "hidden",
+              }}>
+                <div style={{
+                  position: "absolute", inset: 0, opacity: 0.05,
+                  backgroundImage: `radial-gradient(circle at 30% 50%, ${pc} 0%, transparent 50%), radial-gradient(circle at 70% 80%, ${sc} 0%, transparent 50%)`,
+                }} />
+                <ChefHat style={{ width: 48, height: 48, color: pc, opacity: 0.6 }} />
+                {selectedItem.badge && (
+                  <div style={{
+                    position: "absolute", top: 14, right: 14,
+                    padding: "6px 14px", borderRadius: 20,
+                    background: selectedItem.badge === "NEW" ? "linear-gradient(135deg, #10b981, #059669)" :
+                               selectedItem.badge === "POPULAR" ? "linear-gradient(135deg, #f59e0b, #d97706)" :
+                               `linear-gradient(135deg, ${pc}, ${sc})`,
+                    color: "#fff", fontSize: 11, fontWeight: 700,
+                  }}>
+                    {selectedItem.badge === "NEW" ? "✨ جديد" : selectedItem.badge === "POPULAR" ? "🔥 الأكثر طلباً" : selectedItem.badge}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Close button — floating */}
+            <button onClick={() => setSelectedItem(null)} style={{
+              position: "absolute", top: 22, left: 22, zIndex: 10,
+              background: darkMode ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.9)",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              border: "none", borderRadius: 14, padding: 10, cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+              transition: "transform 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
               <X style={{ width: 18, height: 18, color: dm.textSec }} />
             </button>
 
-            {/* Product Images */}
-            {selectedItem.images.length > 0 && (
-              <div style={{
-                margin: "0 -20px 16px", overflow: "hidden",
-              }}>
+            {/* ── Content Section ── */}
+            <div style={{ padding: "20px 24px 120px" }}>
+
+              {/* Title + Price row */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: dm.text, margin: 0, lineHeight: 1.3, flex: 1 }}>
+                  {selectedItem.nameAr}
+                </h3>
                 <div style={{
-                  display: "flex", gap: 8, overflowX: "auto", padding: "0 20px",
-                  scrollSnapType: "x mandatory", scrollbarWidth: "none",
+                  padding: "8px 16px", borderRadius: 16,
+                  background: `linear-gradient(135deg, ${pc}15, ${pc}08)`,
+                  border: `1px solid ${pc}25`,
+                  flexShrink: 0,
                 }}>
-                  {selectedItem.images.map((img) => (
-                    <img key={img.id} src={img.imageUrl} alt={selectedItem.nameAr} style={{
-                      width: selectedItem.images.length === 1 ? "100%" : 260,
-                      height: 200, borderRadius: 16, objectFit: "cover",
-                      flexShrink: 0, scrollSnapAlign: "start",
-                    }} />
-                  ))}
+                  {selectedItem.discountPrice ? (
+                    <div style={{ textAlign: "center" }}>
+                      <span style={{ fontSize: 11, color: dm.textSec, textDecoration: "line-through", display: "block" }}>{selectedItem.price} {currency}</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: pc }}>{selectedItem.discountPrice} {currency}</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 18, fontWeight: 800, color: pc }}>{selectedItem.price} {currency}</span>
+                  )}
                 </div>
               </div>
-            )}
 
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: dm.text, margin: "0 0 4px" }}>{selectedItem.nameAr}</h3>
-            {selectedItem.descAr && <p style={{ fontSize: 13, color: dm.textSec, margin: "0 0 16px", lineHeight: 1.6 }}>{selectedItem.descAr}</p>}
+              {/* English name */}
+              {selectedItem.nameEn && (
+                <p style={{ fontSize: 13, color: dm.textSec, margin: "0 0 12px", fontStyle: "italic", opacity: 0.7 }}>{selectedItem.nameEn}</p>
+              )}
 
-            {/* Sizes */}
-            {selectedItem.sizes.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: dm.text, margin: "0 0 10px" }}>الحجم</p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {selectedItem.sizes.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedSize(s.id)}
-                      style={{
-                        padding: "8px 16px", borderRadius: 12,
-                        border: selectedSize === s.id ? `2px solid ${pc}` : `1px solid ${dm.inputBorder}`,
-                        background: selectedSize === s.id ? `${pc}10` : dm.inputBg,
-                        color: selectedSize === s.id ? pc : dm.text,
-                        fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
-                      {s.nameAr} — {s.price} {currency}
-                    </button>
-                  ))}
+              {/* Description */}
+              {selectedItem.descAr && (
+                <p style={{ fontSize: 14, color: dm.textSec, margin: "0 0 20px", lineHeight: 1.8, letterSpacing: 0.2 }}>{selectedItem.descAr}</p>
+              )}
+
+              {/* Info chips — Calories, Prep Time */}
+              {(selectedItem.calories || selectedItem.prepTime) && (
+                <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
+                  {selectedItem.calories && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 12,
+                      background: darkMode ? "rgba(255,255,255,0.06)" : "#fef3c7",
+                      border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#fde68a"}`,
+                    }}>
+                      <Flame style={{ width: 14, height: 14, color: "#f59e0b" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: dm.text }}>{selectedItem.calories} سعرة</span>
+                    </div>
+                  )}
+                  {selectedItem.prepTime && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 12,
+                      background: darkMode ? "rgba(255,255,255,0.06)" : "#ede9fe",
+                      border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#ddd6fe"}`,
+                    }}>
+                      <Clock style={{ width: 14, height: 14, color: "#8b5cf6" }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: dm.text }}>{selectedItem.prepTime} دقيقة</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Extras */}
-            {selectedItem.extras.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: dm.text, margin: "0 0 10px" }}>إضافات</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {selectedItem.extras.map(e => {
-                    const isSelected = selectedExtras.includes(e.id);
-                    return (
-                      <button
-                        key={e.id}
-                        onClick={() => setSelectedExtras(isSelected ? selectedExtras.filter(id => id !== e.id) : [...selectedExtras, e.id])}
-                        className="flex items-center justify-between"
-                        style={{
-                          padding: "10px 14px", borderRadius: 12, width: "100%",
-                          border: isSelected ? `2px solid ${pc}` : `1px solid ${dm.inputBorder}`,
-                          background: isSelected ? `${pc}10` : dm.inputBg,
-                          cursor: "pointer", textAlign: "right",
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div style={{
-                            width: 20, height: 20, borderRadius: 6,
-                            border: isSelected ? `2px solid ${pc}` : "2px solid #d1d5db",
-                            background: isSelected ? pc : "#fff",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>
-                            {isSelected && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
+              {/* ── Sizes ── */}
+              {selectedItem.sizes.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: dm.text, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                    📏 اختر الحجم
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {selectedItem.sizes.map(s => {
+                      const active = selectedSize === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSize(s.id)}
+                          style={{
+                            padding: "12px 20px", borderRadius: 16,
+                            border: active ? `2px solid ${pc}` : `1.5px solid ${dm.inputBorder}`,
+                            background: active
+                              ? darkMode ? `${pc}25` : `${pc}12`
+                              : dm.inputBg,
+                            color: active ? pc : dm.text,
+                            fontSize: 14, fontWeight: 700, cursor: "pointer",
+                            transition: "all 0.25s ease",
+                            transform: active ? "scale(1.02)" : "scale(1)",
+                            boxShadow: active ? `0 4px 12px ${pc}25` : "none",
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            minWidth: 90,
+                          }}
+                        >
+                          <span>{s.nameAr}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.8 }}>{s.price} {currency}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Extras ── */}
+              {selectedItem.extras.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: dm.text, margin: "0 0 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                    ✨ إضافات
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {selectedItem.extras.map(e => {
+                      const isSelected = selectedExtras.includes(e.id);
+                      return (
+                        <button
+                          key={e.id}
+                          onClick={() => setSelectedExtras(isSelected ? selectedExtras.filter(id => id !== e.id) : [...selectedExtras, e.id])}
+                          style={{
+                            padding: "14px 18px", borderRadius: 16, width: "100%",
+                            border: isSelected ? `2px solid ${pc}` : `1.5px solid ${dm.inputBorder}`,
+                            background: isSelected
+                              ? darkMode ? `${pc}20` : `${pc}08`
+                              : dm.inputBg,
+                            cursor: "pointer", textAlign: "right",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            transition: "all 0.25s ease",
+                            transform: isSelected ? "scale(1.01)" : "scale(1)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{
+                              width: 24, height: 24, borderRadius: 8,
+                              border: isSelected ? `2px solid ${pc}` : `2px solid ${darkMode ? "rgba(255,255,255,0.2)" : "#d1d5db"}`,
+                              background: isSelected ? pc : "transparent",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              transition: "all 0.2s ease",
+                            }}>
+                              {isSelected && <Check style={{ width: 14, height: 14, color: "#fff" }} />}
+                            </div>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: dm.text }}>{e.nameAr}</span>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: dm.text }}>{e.nameAr}</span>
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: pc }}>+{e.price} {currency}</span>
-                      </button>
-                    );
-                  })}
+                          <span style={{
+                            fontSize: 13, fontWeight: 700, color: pc,
+                            padding: "4px 12px", borderRadius: 10,
+                            background: isSelected ? `${pc}15` : "transparent",
+                          }}>+{e.price} {currency}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Quantity + Add */}
-            <div className="flex items-center gap-4" style={{ marginTop: 20 }}>
-              <div className="flex items-center" style={{ background: dm.inputBg, borderRadius: 12, overflow: "hidden" }}>
-                <button onClick={() => setItemQty(Math.max(1, itemQty - 1))} style={{ padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer" }}>
-                  <Minus style={{ width: 16, height: 16, color: dm.textSec }} />
-                </button>
-                <span style={{ padding: "0 12px", fontSize: 16, fontWeight: 700, color: dm.text, minWidth: 24, textAlign: "center" }}>{itemQty}</span>
-                <button onClick={() => setItemQty(itemQty + 1)} style={{ padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer" }}>
-                  <Plus style={{ width: 16, height: 16, color: dm.textSec }} />
+            {/* ── Sticky Add to Cart Bar ── */}
+            <div style={{
+              position: "sticky", bottom: 0, left: 0, right: 0,
+              padding: "16px 24px", paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+              background: dm.sheet,
+              borderTop: `1px solid ${darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+              backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {/* Quantity Selector */}
+                <div style={{
+                  display: "flex", alignItems: "center",
+                  background: darkMode ? "rgba(255,255,255,0.08)" : "#f3f4f6",
+                  borderRadius: 16, overflow: "hidden",
+                  border: `1px solid ${dm.inputBorder}`,
+                }}>
+                  <button onClick={() => setItemQty(Math.max(1, itemQty - 1))} style={{
+                    padding: "14px 16px", border: "none", background: "transparent", cursor: "pointer",
+                    display: "flex", alignItems: "center",
+                  }}>
+                    <Minus style={{ width: 16, height: 16, color: dm.textSec }} />
+                  </button>
+                  <span style={{
+                    padding: "0 8px", fontSize: 18, fontWeight: 800, color: dm.text,
+                    minWidth: 28, textAlign: "center", fontVariantNumeric: "tabular-nums",
+                  }}>{itemQty}</span>
+                  <button onClick={() => setItemQty(itemQty + 1)} style={{
+                    padding: "14px 16px", border: "none", background: "transparent", cursor: "pointer",
+                    display: "flex", alignItems: "center",
+                  }}>
+                    <Plus style={{ width: 16, height: 16, color: pc }} />
+                  </button>
+                </div>
+
+                {/* Add to Cart Button */}
+                <button
+                  onClick={addToCart}
+                  style={{
+                    flex: 1, padding: "16px", borderRadius: 18, border: "none",
+                    background: `linear-gradient(135deg, ${pc}, ${sc})`, color: "#fff",
+                    fontSize: 16, fontWeight: 800, cursor: "pointer",
+                    boxShadow: `0 8px 24px ${pc}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    transition: "all 0.3s ease",
+                    letterSpacing: 0.3,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${pc}50`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 8px 24px ${pc}40`; }}
+                >
+                  <ShoppingCart style={{ width: 18, height: 18 }} />
+                  إضافة — {(() => {
+                    let p = selectedItem.discountPrice || selectedItem.price;
+                    const sizeObj = selectedItem.sizes.find(s => s.id === selectedSize);
+                    if (sizeObj) p = sizeObj.price;
+                    const extrasC = selectedExtras.reduce((sum, eId) => {
+                      const ext = selectedItem.extras.find(e => e.id === eId);
+                      return sum + (ext?.price || 0);
+                    }, 0);
+                    return ((p + extrasC) * itemQty).toFixed(2);
+                  })()} {currency}
                 </button>
               </div>
-              <button
-                onClick={addToCart}
-                style={{
-                  flex: 1, padding: "14px", borderRadius: 14, border: "none",
-                  background: `linear-gradient(135deg, ${pc}, ${sc})`, color: "#fff",
-                  fontSize: 15, fontWeight: 700, cursor: "pointer",
-                  boxShadow: `0 4px 12px ${pc}40`,
-                }}
-              >
-                إضافة للسلة — {(() => {
-                  let p = selectedItem.discountPrice || selectedItem.price;
-                  const sizeObj = selectedItem.sizes.find(s => s.id === selectedSize);
-                  if (sizeObj) p = sizeObj.price;
-                  const extrasC = selectedExtras.reduce((sum, eId) => {
-                    const ext = selectedItem.extras.find(e => e.id === eId);
-                    return sum + (ext?.price || 0);
-                  }, 0);
-                  return ((p + extrasC) * itemQty).toFixed(2);
-                })()} {currency}
-              </button>
             </div>
           </div>
         </div>
