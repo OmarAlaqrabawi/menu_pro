@@ -1,11 +1,10 @@
 export const dynamic = "force-dynamic";
 // src/app/api/upload/route.ts
-// Image upload API — processes and saves images to /public/uploads/
+// Image upload API — uses Vercel Blob for production storage
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import sharp from "sharp";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 import { randomUUID } from "crypto";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -44,19 +43,15 @@ export async function POST(request: Request) {
       .toBuffer();
 
     // Generate unique filename
-    const filename = `${randomUUID()}.webp`;
+    const filename = `menu/${randomUUID()}.webp`;
 
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
+    // Upload to Vercel Blob (persistent cloud storage)
+    const blob = await put(filename, processed, {
+      access: "public",
+      contentType: "image/webp",
+    });
 
-    // Save file
-    const filePath = path.join(uploadsDir, filename);
-    await writeFile(filePath, processed);
-
-    const url = `/uploads/${filename}`;
-
-    return NextResponse.json({ url, size: processed.length });
+    return NextResponse.json({ url: blob.url, size: processed.length });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "upload failed" }, { status: 500 });

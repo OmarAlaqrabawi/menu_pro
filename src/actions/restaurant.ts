@@ -178,28 +178,26 @@ export async function deleteRestaurant(id: string, confirmName: string): Promise
     return { success: false, error: "اسم المطعم غير مطابق" };
   }
 
-  // Cascade delete in order (due to foreign key constraints)
-  // 1. Delete order items -> orders
-  await prisma.orderItem.deleteMany({ where: { order: { restaurantId: id } } });
-  await prisma.order.deleteMany({ where: { restaurantId: id } });
-
-  // 2. Delete menu: item images, sizes, extras -> items -> categories
-  await prisma.itemImage.deleteMany({ where: { item: { category: { restaurantId: id } } } });
-  await prisma.itemSize.deleteMany({ where: { item: { category: { restaurantId: id } } } });
-  await prisma.itemExtra.deleteMany({ where: { item: { category: { restaurantId: id } } } });
-  await prisma.item.deleteMany({ where: { category: { restaurantId: id } } });
-  await prisma.category.deleteMany({ where: { restaurantId: id } });
-
-  // 3. Delete other related data
-  await prisma.table.deleteMany({ where: { restaurantId: id } });
-  await prisma.coverImage.deleteMany({ where: { restaurantId: id } });
-  await prisma.analyticsEvent.deleteMany({ where: { restaurantId: id } });
-  await prisma.notification.deleteMany({ where: { restaurantId: id } });
-
-  // 4. (Subscriptions are user-level, not restaurant-level — no cleanup needed)
-
-  // 5. Finally delete the restaurant
-  await prisma.restaurant.delete({ where: { id } });
+  // Cascade delete atomically (all or nothing)
+  await prisma.$transaction([
+    // 1. Delete order items -> orders
+    prisma.orderItem.deleteMany({ where: { order: { restaurantId: id } } }),
+    prisma.order.deleteMany({ where: { restaurantId: id } }),
+    // 2. Delete menu: item images, sizes, extras -> items -> categories
+    prisma.itemImage.deleteMany({ where: { item: { category: { restaurantId: id } } } }),
+    prisma.itemSize.deleteMany({ where: { item: { category: { restaurantId: id } } } }),
+    prisma.itemExtra.deleteMany({ where: { item: { category: { restaurantId: id } } } }),
+    prisma.item.deleteMany({ where: { category: { restaurantId: id } } }),
+    prisma.category.deleteMany({ where: { restaurantId: id } }),
+    // 3. Delete other related data
+    prisma.table.deleteMany({ where: { restaurantId: id } }),
+    prisma.coverImage.deleteMany({ where: { restaurantId: id } }),
+    prisma.rating.deleteMany({ where: { restaurantId: id } }),
+    prisma.analyticsEvent.deleteMany({ where: { restaurantId: id } }),
+    prisma.notification.deleteMany({ where: { restaurantId: id } }),
+    // 4. Finally delete the restaurant
+    prisma.restaurant.delete({ where: { id } }),
+  ]);
 
   return { success: true };
 }

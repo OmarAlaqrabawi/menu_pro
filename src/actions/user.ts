@@ -74,7 +74,6 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     return { success: false, error: "لا يمكنك حذف حسابك" };
   }
 
-  // Check if user has restaurants
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { _count: { select: { restaurants: true } } },
@@ -82,14 +81,23 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
 
   if (!user) return { success: false, error: "المستخدم غير موجود" };
 
-  // Delete user's sessions and accounts first
-  await prisma.session.deleteMany({ where: { userId } });
-  await prisma.account.deleteMany({ where: { userId } });
-  await prisma.notification.deleteMany({ where: { userId } });
-  await prisma.user.delete({ where: { id: userId } });
+  // Block deletion if user owns restaurants (must be reassigned first)
+  if (user._count.restaurants > 0) {
+    return { success: false, error: `لا يمكن حذف المستخدم لأنه يملك ${user._count.restaurants} مطعم. قم بنقل ملكية المطاعم أولاً.` };
+  }
+
+  // Atomic deletion
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { userId } }),
+    prisma.account.deleteMany({ where: { userId } }),
+    prisma.notification.deleteMany({ where: { userId } }),
+    prisma.subscription.deleteMany({ where: { userId } }),
+    prisma.user.delete({ where: { id: userId } }),
+  ]);
 
   return { success: true };
 }
+
 
 // Toggle user active status
 export async function toggleUserActive(userId: string): Promise<ActionResult> {

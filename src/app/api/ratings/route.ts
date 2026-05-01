@@ -1,12 +1,27 @@
 export const dynamic = "force-dynamic";
 // src/app/api/ratings/route.ts
-// Public API — submit and fetch ratings
+// Public API — submit and fetch ratings with basic spam protection
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+// Simple in-memory rate limiter (resets on cold start, which is fine for basic protection)
+const rateLimit = new Map<string, number>();
+const COOLDOWN_MS = 30_000; // 30 seconds between ratings per IP
+
+function getRateLimitKey(request: Request): string {
+  return request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+}
 
 // POST — Submit a rating
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const ip = getRateLimitKey(request);
+    const lastSubmit = rateLimit.get(ip) || 0;
+    if (Date.now() - lastSubmit < COOLDOWN_MS) {
+      return NextResponse.json({ error: "يرجى الانتظار قبل إرسال تقييم جديد" }, { status: 429 });
+    }
+
     const body = await request.json();
     const { restaurantId, itemId, orderId, stars, comment, customerName } = body;
 
@@ -14,16 +29,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid data" }, { status: 400 });
     }
 
+    // Sanitize inputs
+    const safeComment = comment ? String(comment).slice(0, 500).replace(/<[^>]*>/g, '') : null;
+    const safeName = customerName ? String(customerName).slice(0, 100).replace(/<[^>]*>/g, '') : null;
+
     const rating = await prisma.rating.create({
       data: {
         restaurantId,
         itemId: itemId || null,
         orderId: orderId || null,
         stars: Math.round(stars),
-        comment: comment || null,
-        customerName: customerName || null,
+        comment: safeComment,
+        customerName: safeName,
       },
     });
+
+    // Record rate limit
+    rateLimit.set(ip, Date.now());
 
     return NextResponse.json({ success: true, id: rating.id });
   } catch (error) {

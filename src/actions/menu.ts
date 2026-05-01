@@ -181,6 +181,13 @@ export async function toggleItemAvailability(id: string): Promise<ActionResult> 
 // ═══════════════ Sizes & Extras ═══════════════
 
 export async function addItemSize(data: { itemId: string; nameAr: string; nameEn?: string; price: number }): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
+  if (!item) return { success: false, error: "العنصر غير موجود" };
+  if (!(await canEditMenu(user, item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   const validated = createItemSizeSchema.safeParse(data);
   if (!validated.success) return { success: false, error: validated.error.issues[0].message };
 
@@ -189,11 +196,25 @@ export async function addItemSize(data: { itemId: string; nameAr: string; nameEn
 }
 
 export async function deleteItemSize(id: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const size = await prisma.itemSize.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
+  if (!size) return { success: false, error: "غير موجود" };
+  if (!(await canEditMenu(user, size.item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   await prisma.itemSize.delete({ where: { id } });
   return { success: true };
 }
 
 export async function addItemExtra(data: { itemId: string; nameAr: string; nameEn?: string; price: number }): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
+  if (!item) return { success: false, error: "العنصر غير موجود" };
+  if (!(await canEditMenu(user, item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   const validated = createItemExtraSchema.safeParse(data);
   if (!validated.success) return { success: false, error: validated.error.issues[0].message };
 
@@ -202,6 +223,13 @@ export async function addItemExtra(data: { itemId: string; nameAr: string; nameE
 }
 
 export async function deleteItemExtra(id: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const extra = await prisma.itemExtra.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
+  if (!extra) return { success: false, error: "غير موجود" };
+  if (!(await canEditMenu(user, extra.item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   await prisma.itemExtra.delete({ where: { id } });
   return { success: true };
 }
@@ -209,6 +237,13 @@ export async function deleteItemExtra(id: string): Promise<ActionResult> {
 // ═══════════════ Item Images ═══════════════
 
 export async function addItemImage(data: { itemId: string; imageUrl: string }): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
+  if (!item) return { success: false, error: "العنصر غير موجود" };
+  if (!(await canEditMenu(user, item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   const maxOrder = await prisma.itemImage.findFirst({
     where: { itemId: data.itemId },
     orderBy: { sortOrder: "desc" },
@@ -226,6 +261,13 @@ export async function addItemImage(data: { itemId: string; imageUrl: string }): 
 }
 
 export async function deleteItemImage(id: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  const image = await prisma.itemImage.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
+  if (!image) return { success: false, error: "غير موجود" };
+  if (!(await canEditMenu(user, image.item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
+
   await prisma.itemImage.delete({ where: { id } });
   return { success: true };
 }
@@ -345,6 +387,14 @@ export async function copyCategory(categoryId: string): Promise<ActionResult & {
 export async function reorderItems(items: { id: string; sortOrder: number }[]): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
+  // Verify ownership of at least the first item
+  if (items.length > 0) {
+    const firstItem = await prisma.item.findUnique({ where: { id: items[0].id }, include: { category: true } });
+    if (firstItem && !(await canEditMenu(user, firstItem.category.restaurantId))) {
+      return { success: false, error: "لا تملك صلاحية" };
+    }
+  }
 
   for (const item of items) {
     await prisma.item.update({ where: { id: item.id }, data: { sortOrder: item.sortOrder } });

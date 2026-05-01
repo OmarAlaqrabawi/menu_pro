@@ -11,7 +11,11 @@ function createPrismaClient() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pool } = require("pg");
   const connStr = dbUrl?.includes("sslmode") ? dbUrl : `${dbUrl}?sslmode=require`;
-  const pool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+  const isProduction = process.env.NODE_ENV === "production";
+  const pool = new Pool({
+    connectionString: connStr,
+    ssl: { rejectUnauthorized: isProduction },
+  });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }

@@ -30,14 +30,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const email = credentials.email as string;
           const password = credentials.password as string;
-          console.log("[AUTH] Attempting login for:", email);
 
           const user = await prisma.user.findUnique({
             where: { email },
           });
 
           if (!user || !user.passwordHash) {
-            console.log("[AUTH] User not found:", email);
             return null;
           }
 
@@ -48,11 +46,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const isValid = await compare(password, user.passwordHash);
           if (!isValid) {
-            console.log("[AUTH] Invalid password for:", email);
             return null;
           }
 
-          console.log("[AUTH] Login success for:", email);
           return {
             id: user.id,
             name: user.name,

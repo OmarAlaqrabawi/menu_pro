@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 // src/app/api/analytics/track/route.ts
-// Public API — no auth required. Tracks analytics events from customer menu.
+// Public API — tracks anonymous analytics events.
+// PRIVACY: No PII (IP/UserAgent) is stored.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -23,14 +24,15 @@ export async function POST(request: Request) {
     }
 
     // Fire and forget — don't block the response
+    // PRIVACY: We do NOT store IP addresses or user agents
     await prisma.analyticsEvent.create({
       data: {
         restaurantId,
         eventType,
         categoryId: categoryId || null,
         itemId: itemId || null,
-        visitorIp: request.headers.get("x-forwarded-for") || null,
-        userAgent: request.headers.get("user-agent") || null,
+        visitorIp: null,   // Removed for GDPR/PDPL compliance
+        userAgent: null,   // Removed for GDPR/PDPL compliance
         referrer: request.headers.get("referer") || null,
       },
     });
