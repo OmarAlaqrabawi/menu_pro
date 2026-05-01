@@ -21,7 +21,10 @@ export async function getUsers() {
   if (!admin) return [];
 
   return prisma.user.findMany({
-    include: {
+    select: {
+      id: true, name: true, email: true, phone: true,
+      role: true, isActive: true, image: true,
+      createdAt: true, updatedAt: true,
       restaurants: { select: { id: true, nameAr: true } },
       _count: { select: { restaurants: true } },
     },

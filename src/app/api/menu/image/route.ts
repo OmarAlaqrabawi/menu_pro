@@ -16,6 +16,10 @@ export async function POST(request: Request) {
     if (!itemId || !imageUrl) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
+    // Validate imageUrl is a safe HTTPS URL
+    if (typeof imageUrl !== "string" || !imageUrl.startsWith("https://")) {
+      return NextResponse.json({ error: "invalid image URL" }, { status: 400 });
+    }
 
     // Verify ownership: item → category → restaurant → user
     const user = session.user as { id: string; role?: string };

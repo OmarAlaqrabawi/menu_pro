@@ -29,6 +29,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid data" }, { status: 400 });
     }
 
+    // Verify restaurant exists
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { id: true } });
+    if (!restaurant) {
+      return NextResponse.json({ error: "restaurant not found" }, { status: 404 });
+    }
+
     // Sanitize inputs
     const safeComment = comment ? String(comment).slice(0, 500).replace(/<[^>]*>/g, '') : null;
     const safeName = customerName ? String(customerName).slice(0, 100).replace(/<[^>]*>/g, '') : null;

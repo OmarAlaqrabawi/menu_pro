@@ -128,7 +128,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string): Pro
   return { success: true };
 }
 
-// ─── Create order (from customer menu) ───
+// ─── Create order (from customer menu — SERVER-SIDE PRICE VERIFIED) ───
 export async function createOrder(data: {
   restaurantId: string;
   customerName?: string;
@@ -136,70 +136,156 @@ export async function createOrder(data: {
   orderType: string;
   tableId?: string;
   notes?: string;
-  items: { itemId: string; itemName: string; quantity: number; unitPrice: number; sizeName?: string; extras?: string[]; notes?: string }[];
+  items: { itemId: string; quantity: number; sizeId?: string; extraIds?: string[]; sizeName?: string; extras?: string[]; notes?: string }[];
 }): Promise<ActionResult & { orderNumber?: number }> {
-  const validated = createOrderSchema.safeParse(data);
-  if (!validated.success) return { success: false, error: validated.error.issues[0].message };
+  // Validate orderType
+  const VALID_ORDER_TYPES = ["DINE_IN", "TAKEAWAY", "DELIVERY", "SCHEDULED"];
+  if (!data.restaurantId || !data.orderType || !data.items || data.items.length === 0) {
+    return { success: false, error: "بيانات ناقصة" };
+  }
+  if (!VALID_ORDER_TYPES.includes(data.orderType)) {
+    return { success: false, error: "نوع الطلب غير صالح" };
+  }
+  if (data.items.length > 50) {
+    return { success: false, error: "الحد الأقصى 50 عنصر في الطلب" };
+  }
 
   const restaurant = await prisma.restaurant.findUnique({ where: { id: data.restaurantId } });
   if (!restaurant || !restaurant.isActive) return { success: false, error: "المطعم غير متاح حالياً" };
 
-  // Calculate next order number
-  const lastOrder = await prisma.order.findFirst({
-    where: { restaurantId: data.restaurantId },
-    orderBy: { orderNumber: "desc" },
-    select: { orderNumber: true },
-  });
-  const orderNumber = (lastOrder?.orderNumber ?? 1000) + 1;
+  // Validate tableId belongs to this restaurant
+  if (data.tableId) {
+    const table = await prisma.table.findUnique({ where: { id: data.tableId } });
+    if (!table || table.restaurantId !== data.restaurantId) {
+      return { success: false, error: "الطاولة غير صالحة لهذا المطعم" };
+    }
+  }
 
-  // Calculate totals
-  const subtotal = data.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  // SERVER-SIDE PRICE VERIFICATION — NEVER trust client prices
+  const itemIds = [...new Set(data.items.map(i => i.itemId))];
+  const dbItems = await prisma.item.findMany({
+    where: {
+      id: { in: itemIds },
+      isAvailable: true,
+      category: { restaurantId: data.restaurantId },
+    },
+    include: { sizes: true, extras: true },
+  });
+
+  if (dbItems.length !== itemIds.length) {
+    return { success: false, error: "بعض الأصناف غير متوفرة أو لا تنتمي لهذا المطعم" };
+  }
+
+  const dbItemMap = new Map(dbItems.map(i => [i.id, i]));
+
+  const verifiedItems = data.items.map(clientItem => {
+    const dbItem = dbItemMap.get(clientItem.itemId)!;
+    let unitPrice = dbItem.discountPrice ?? dbItem.price;
+    let sizeName: string | null = null;
+
+    if (clientItem.sizeId) {
+      const size = dbItem.sizes.find(s => s.id === clientItem.sizeId);
+      if (size) { unitPrice = size.price; sizeName = size.nameAr; }
+    } else if (clientItem.sizeName) {
+      const size = dbItem.sizes.find(s => s.nameAr === clientItem.sizeName);
+      if (size) { unitPrice = size.price; sizeName = size.nameAr; }
+    }
+
+    let extrasTotal = 0;
+    const extraNames: string[] = [];
+    if (clientItem.extraIds?.length) {
+      for (const extraId of clientItem.extraIds) {
+        const extra = dbItem.extras.find(e => e.id === extraId);
+        if (extra) { extrasTotal += extra.price; extraNames.push(extra.nameAr); }
+      }
+    } else if (clientItem.extras?.length) {
+      for (const extraName of clientItem.extras) {
+        const extra = dbItem.extras.find(e => e.nameAr === extraName);
+        if (extra) { extrasTotal += extra.price; extraNames.push(extra.nameAr); }
+      }
+    }
+
+    const totalUnitPrice = unitPrice + extrasTotal;
+    const quantity = Math.max(1, Math.min(99, Math.floor(clientItem.quantity)));
+
+    return {
+      itemId: dbItem.id,
+      itemName: dbItem.nameAr,
+      quantity,
+      unitPrice: totalUnitPrice,
+      totalPrice: totalUnitPrice * quantity,
+      sizeName,
+      extras: extraNames.length > 0 ? JSON.stringify(extraNames) : null,
+      notes: clientItem.notes ? String(clientItem.notes).slice(0, 200) : null,
+    };
+  });
+
+  const subtotal = verifiedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const taxAmount = subtotal * (restaurant.taxPercent / 100);
   const serviceAmount = subtotal * (restaurant.servicePercent / 100);
   const total = subtotal + taxAmount + serviceAmount;
 
-  const order = await prisma.order.create({
-    data: {
-      restaurantId: data.restaurantId,
-      orderNumber,
-      customerName: data.customerName,
-      customerPhone: data.customerPhone,
-      orderType: data.orderType,
-      tableId: data.tableId,
-      notes: data.notes,
-      subtotal,
-      taxAmount,
-      serviceAmount,
-      total,
-      status: "NEW",
-      items: {
-        create: data.items.map((item) => ({
-          itemId: item.itemId,
-          itemName: item.itemName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.unitPrice * item.quantity,
-          sizeName: item.sizeName,
-          extras: item.extras ? JSON.stringify(item.extras) : null,
-          notes: item.notes,
-        })),
+  // Sanitize text
+  const safeName = data.customerName ? String(data.customerName).slice(0, 100).replace(/<[^>]*>/g, '') : undefined;
+  const safeNotes = data.notes ? String(data.notes).slice(0, 500).replace(/<[^>]*>/g, '') : undefined;
+
+  // ATOMIC order creation with retry
+  let order;
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      order = await prisma.$transaction(async (tx) => {
+        const lastOrder = await tx.order.findFirst({
+          where: { restaurantId: data.restaurantId },
+          orderBy: { orderNumber: "desc" },
+          select: { orderNumber: true },
+        });
+        const orderNumber = (lastOrder?.orderNumber ?? 1000) + 1;
+
+        return tx.order.create({
+          data: {
+            restaurantId: data.restaurantId,
+            orderNumber,
+            customerName: safeName,
+            customerPhone: data.customerPhone,
+            orderType: data.orderType,
+            tableId: data.tableId,
+            notes: safeNotes,
+            subtotal,
+            taxAmount,
+            serviceAmount,
+            total,
+            status: "NEW",
+            items: { create: verifiedItems },
+          },
+        });
+      });
+      break;
+    } catch (err: unknown) {
+      retries--;
+      if (retries > 0 && err instanceof Error && err.message.includes("Unique constraint")) continue;
+      throw err;
+    }
+  }
+
+  if (!order) return { success: false, error: "فشل إنشاء الطلب" };
+
+  // Notify restaurant owner (non-critical)
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: restaurant.userId,
+        restaurantId: restaurant.id,
+        type: "NEW_ORDER",
+        title: `طلب جديد #${order.orderNumber}`,
+        body: `طلب جديد${safeName ? " من " + safeName : ""} — ${total.toFixed(2)} ${restaurant.currency}`,
       },
-    },
-  });
+    });
+  } catch { /* non-critical */ }
 
-  // Notify restaurant owner
-  await prisma.notification.create({
-    data: {
-      userId: restaurant.userId,
-      restaurantId: restaurant.id,
-      type: "NEW_ORDER",
-      title: `طلب جديد #${orderNumber}`,
-      body: `طلب جديد${data.customerName ? " من " + data.customerName : ""} — ${total.toFixed(2)} ${restaurant.currency}`,
-    },
-  });
-
-  return { success: true, orderNumber };
+  return { success: true, orderNumber: order.orderNumber };
 }
+
 
 // ─── Get order stats for dashboard ───
 export async function getOrderStats(restaurantId?: string) {

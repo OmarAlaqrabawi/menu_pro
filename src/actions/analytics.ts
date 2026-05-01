@@ -82,18 +82,34 @@ export async function getDashboardStats() {
 }
 
 // ─── Track analytics event (for public menu) ───
+const VALID_TRACK_EVENTS = [
+  "MENU_VIEW", "CATEGORY_VIEW", "ITEM_VIEW",
+  "ITEM_ADD_TO_CART", "ORDER_PLACED", "QR_SCAN",
+];
+
 export async function trackEvent(data: {
   restaurantId: string;
   eventType: string;
   categoryId?: string;
   itemId?: string;
 }) {
+  if (!data.restaurantId || !data.eventType) return;
+  if (!VALID_TRACK_EVENTS.includes(data.eventType)) return;
+
+  // Verify restaurant exists (prevent orphaned analytics)
+  const exists = await prisma.restaurant.findUnique({
+    where: { id: data.restaurantId },
+    select: { id: true },
+  });
+  if (!exists) return;
+
   await prisma.analyticsEvent.create({
     data: {
       restaurantId: data.restaurantId,
       eventType: data.eventType,
-      categoryId: data.categoryId,
-      itemId: data.itemId,
+      categoryId: data.categoryId || null,
+      itemId: data.itemId || null,
     },
   });
 }
+

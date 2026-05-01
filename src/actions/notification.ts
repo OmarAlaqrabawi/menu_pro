@@ -14,11 +14,12 @@ async function getCurrentUser() {
 export async function getNotifications(limit = 20) {
   const user = await getCurrentUser();
   if (!user) return [];
+  const safeLimit = Math.min(Math.max(1, limit), 100);
 
   return prisma.notification.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: safeLimit,
   });
 }
 
@@ -38,7 +39,7 @@ export async function markAsRead(id: string) {
   if (!user) return;
 
   await prisma.notification.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: { isRead: true },
   });
 }
@@ -59,5 +60,5 @@ export async function deleteNotification(id: string) {
   const user = await getCurrentUser();
   if (!user) return;
 
-  await prisma.notification.delete({ where: { id } });
+  await prisma.notification.deleteMany({ where: { id, userId: user.id } });
 }
