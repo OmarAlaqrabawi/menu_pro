@@ -4,35 +4,19 @@ export const dynamic = "force-dynamic";
 // SECURITY: Prices are verified server-side from DB, not trusted from client.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// ── Rate Limiting (in-memory, per IP, 5 orders per minute) ──
-const orderRateMap = new Map<string, { count: number; resetAt: number }>();
-const ORDER_RATE_LIMIT = 5;
-const ORDER_RATE_WINDOW = 60_000; // 1 minute
+import { checkOrderRateLimit } from "@/lib/rate-limit";
 
 const VALID_ORDER_TYPES = ["DINE_IN", "TAKEAWAY", "DELIVERY", "SCHEDULED"] as const;
 const MAX_ITEMS_PER_ORDER = 50;
 
 export async function POST(request: Request) {
   try {
-    // ── Rate Limiting ──
+    // ── Rate Limiting (Redis-backed with in-memory fallback) ──
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded?.split(",")[0]?.trim() || "unknown";
-    const now = Date.now();
-    const rateEntry = orderRateMap.get(ip);
-    if (rateEntry && rateEntry.resetAt > now) {
-      if (rateEntry.count >= ORDER_RATE_LIMIT) {
-        return NextResponse.json({ error: "عدد كبير من الطلبات، حاول لاحقاً" }, { status: 429 });
-      }
-      rateEntry.count++;
-    } else {
-      orderRateMap.set(ip, { count: 1, resetAt: now + ORDER_RATE_WINDOW });
-    }
-    // Cleanup stale entries periodically
-    if (orderRateMap.size > 5000) {
-      for (const [key, val] of orderRateMap) {
-        if (val.resetAt <= now) orderRateMap.delete(key);
-      }
+    const { success: rateLimitOk } = await checkOrderRateLimit(ip);
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: "عدد كبير من الطلبات، حاول لاحقاً" }, { status: 429 });
     }
 
     const body = await request.json();

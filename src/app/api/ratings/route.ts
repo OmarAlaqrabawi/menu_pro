@@ -3,22 +3,15 @@ export const dynamic = "force-dynamic";
 // Public API — submit and fetch ratings with basic spam protection
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// Simple in-memory rate limiter (resets on cold start, which is fine for basic protection)
-const rateLimit = new Map<string, number>();
-const COOLDOWN_MS = 30_000; // 30 seconds between ratings per IP
-
-function getRateLimitKey(request: Request): string {
-  return request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-}
+import { checkRatingRateLimit } from "@/lib/rate-limit";
 
 // POST — Submit a rating
 export async function POST(request: Request) {
   try {
-    // Rate limiting
-    const ip = getRateLimitKey(request);
-    const lastSubmit = rateLimit.get(ip) || 0;
-    if (Date.now() - lastSubmit < COOLDOWN_MS) {
+    // Rate limiting (Redis-backed with in-memory fallback)
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const { success: rateLimitOk } = await checkRatingRateLimit(ip);
+    if (!rateLimitOk) {
       return NextResponse.json({ error: "يرجى الانتظار قبل إرسال تقييم جديد" }, { status: 429 });
     }
 
@@ -51,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     // Record rate limit
-    rateLimit.set(ip, Date.now());
+    // Rate limit tracking handled by centralized rate-limit module
 
     return NextResponse.json({ success: true, id: rating.id });
   } catch (error) {

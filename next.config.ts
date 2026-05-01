@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/adapter-pg", "@prisma/adapter-better-sqlite3", "pg", "better-sqlite3"],
@@ -19,4 +20,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Sentry build-time options
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Upload source maps for better error traces
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+
+  // Only enable in production with valid config
+  silent: !process.env.SENTRY_ORG,
+
+  // Disable Sentry telemetry
+  telemetry: false,
+});
