@@ -477,24 +477,24 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
         @keyframes scaleIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
         @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
         .menu-item-card{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)}
-        .menu-item-card:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 16px 40px rgba(0,0,0,0.12)!important}
+        .menu-item-card:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 20px 48px rgba(0,0,0,0.14)!important}
         .menu-item-card:active{transform:scale(0.97)}
-        .cat-tab{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)}
-        .cat-tab:hover{transform:translateY(-2px) scale(1.03)}
+        .cat-tab{transition:all 0.25s ease}
+        .cat-tab:hover{opacity:0.85}
         ::-webkit-scrollbar{width:0;height:0}
-        .add-btn:hover{filter:brightness(1.1);transform:scale(1.02)}
+        /* Mobile */
+        .menu-outer{padding:0 16px 24px}
+        .desktop-sidebar{display:none}
+        .mobile-tabs{display:block}
+        .items-grid{grid-template-columns:repeat(2,1fr)}
+        /* Desktop */
         @media(min-width:768px){
-          .desktop-layout{display:flex!important;max-width:1100px;margin:0 auto;gap:32px;padding:24px 32px}
-          .desktop-sidebar{width:240px;flex-shrink:0;position:sticky;top:80px;height:fit-content;display:block!important}
+          .menu-outer{max-width:1100px;margin:0 auto;padding:28px 32px 40px;display:flex;gap:28px;align-items:flex-start}
+          .desktop-sidebar{display:block;width:220px;flex-shrink:0;position:sticky;top:24px}
           .desktop-main{flex:1;min-width:0}
-          .items-grid{grid-template-columns:repeat(3,1fr)!important}
           .mobile-tabs{display:none!important}
-        }
-        @media(max-width:767px){
-          .desktop-sidebar{display:none!important}
-          .items-grid{grid-template-columns:repeat(2,1fr)!important}
+          .items-grid{grid-template-columns:repeat(3,1fr)!important}
         }
       `}</style>
 
@@ -529,7 +529,37 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px" }} className="desktop-layout">
+      <div className="menu-outer">
+        {/* ─── Desktop Sidebar (hidden on mobile) ─── */}
+        <div className="desktop-sidebar">
+          <div style={{ background: dm.card, borderRadius: 20, padding: 16, border: `1px solid ${dm.border}`, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: dm.textSec, margin: "0 0 12px", textTransform: "uppercase", letterSpacing: "0.06em" }}>التصنيفات</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {filteredCategories.map((cat) => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <button key={cat.id} className="cat-tab"
+                    onClick={() => { setActiveCategory(cat.id); trackEvent("CATEGORY_VIEW", { categoryId: cat.id }); }}
+                    style={{
+                      padding: "10px 14px", borderRadius: 12, border: "none", textAlign: "right",
+                      background: isActive ? `linear-gradient(135deg, ${pc}, ${sc})` : "transparent",
+                      color: isActive ? "#fff" : dm.text,
+                      fontSize: 14, fontWeight: isActive ? 700 : 500, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 8, width: "100%",
+                      boxShadow: isActive ? `0 4px 12px ${pc}40` : "none",
+                    }}>
+                    {cat.emoji && <span style={{ fontSize: 16 }}>{cat.emoji}</span>}
+                    <span>{cat.nameAr}</span>
+                    <span style={{ marginRight: "auto", fontSize: 11, opacity: 0.6, background: isActive ? "rgba(255,255,255,0.2)" : darkMode ? "rgba(255,255,255,0.08)" : "#f3f4f6", borderRadius: 8, padding: "2px 7px" }}>{cat.items.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Main Content ─── */}
+        <div className="desktop-main" style={{ flex: 1, minWidth: 0 }}>
 
         {/* ─── Search Bar ─── */}
         <div style={{ padding: "12px 0 4px" }}>
@@ -849,7 +879,8 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
         <div style={{ textAlign: "center", padding: "12px 0 24px", fontSize: 11, color: "#ccc" }}>
           Powered by <span style={{ fontWeight: 700, color: pc }}>MenuPro</span>
         </div>
-      </div>
+        </div>{/* end desktop-main */}
+      </div>{/* end menu-outer */}
 
       {/* ─── Floating Cart Button ─── */}
       {cart.length > 0 && !showCart && !selectedItem && (
