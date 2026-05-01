@@ -1,7 +1,8 @@
 // src/actions/menu.ts
 "use server";
 
-import { auth } from "@/auth";
+import { getAuthUser } from "@/lib/auth-guard";
+import type { AuthUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import {
   createCategorySchema, updateCategorySchema,
@@ -11,13 +12,7 @@ import {
 import type { CreateCategoryInput, UpdateCategoryInput, CreateItemInput, UpdateItemInput } from "@/validators/menu";
 import type { ActionResult } from "./auth";
 
-async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as { id: string; role?: string };
-}
-
-async function canEditMenu(user: { id: string; role?: string }, restaurantId: string) {
+async function canEditMenu(user: AuthUser, restaurantId: string) {
   if (user.role === "ADMIN") return true;
   const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
   if (!restaurant) return false;
@@ -27,6 +22,15 @@ async function canEditMenu(user: { id: string; role?: string }, restaurantId: st
 // ═══════════════ Categories ═══════════════
 
 export async function getCategories(restaurantId: string) {
+  const user = await getAuthUser();
+  if (!user) return [];
+
+  // Verify user has access to this restaurant
+  if (user.role !== "ADMIN") {
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { userId: true } });
+    if (!restaurant || restaurant.userId !== user.id) return [];
+  }
+
   return prisma.category.findMany({
     where: { restaurantId },
     include: {
@@ -44,7 +48,7 @@ export async function getCategories(restaurantId: string) {
 }
 
 export async function createCategory(data: CreateCategoryInput): Promise<ActionResult & { id?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
   if (!(await canEditMenu(user, data.restaurantId))) return { success: false, error: "لا تملك صلاحية تعديل المنيو" };
 
@@ -65,7 +69,7 @@ export async function createCategory(data: CreateCategoryInput): Promise<ActionR
 }
 
 export async function updateCategory(id: string, data: UpdateCategoryInput): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const category = await prisma.category.findUnique({ where: { id } });
@@ -80,7 +84,7 @@ export async function updateCategory(id: string, data: UpdateCategoryInput): Pro
 }
 
 export async function deleteCategory(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const category = await prisma.category.findUnique({ where: { id } });
@@ -92,7 +96,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 }
 
 export async function reorderCategories(restaurantId: string, items: { id: string; sortOrder: number }[]): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
   if (!(await canEditMenu(user, restaurantId))) return { success: false, error: "لا تملك صلاحية" };
 
@@ -108,6 +112,14 @@ export async function reorderCategories(restaurantId: string, items: { id: strin
 // ═══════════════ Items ═══════════════
 
 export async function getItems(categoryId: string) {
+  const user = await getAuthUser();
+  if (!user) return [];
+
+  // Verify ownership via category → restaurant
+  const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { restaurantId: true, restaurant: { select: { userId: true } } } });
+  if (!category) return [];
+  if (user.role !== "ADMIN" && category.restaurant.userId !== user.id) return [];
+
   return prisma.item.findMany({
     where: { categoryId },
     include: { sizes: { orderBy: { sortOrder: "asc" } }, extras: { orderBy: { sortOrder: "asc" } }, images: { orderBy: { sortOrder: "asc" } } },
@@ -116,7 +128,7 @@ export async function getItems(categoryId: string) {
 }
 
 export async function createItem(data: CreateItemInput): Promise<ActionResult & { id?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
@@ -140,7 +152,7 @@ export async function createItem(data: CreateItemInput): Promise<ActionResult & 
 }
 
 export async function updateItem(id: string, data: UpdateItemInput): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id }, include: { category: true } });
@@ -155,7 +167,7 @@ export async function updateItem(id: string, data: UpdateItemInput): Promise<Act
 }
 
 export async function deleteItem(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id }, include: { category: true } });
@@ -167,7 +179,7 @@ export async function deleteItem(id: string): Promise<ActionResult> {
 }
 
 export async function toggleItemAvailability(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id }, include: { category: true } });
@@ -181,7 +193,7 @@ export async function toggleItemAvailability(id: string): Promise<ActionResult> 
 // ═══════════════ Sizes & Extras ═══════════════
 
 export async function addItemSize(data: { itemId: string; nameAr: string; nameEn?: string; price: number }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
@@ -196,7 +208,7 @@ export async function addItemSize(data: { itemId: string; nameAr: string; nameEn
 }
 
 export async function deleteItemSize(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const size = await prisma.itemSize.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
@@ -208,7 +220,7 @@ export async function deleteItemSize(id: string): Promise<ActionResult> {
 }
 
 export async function addItemExtra(data: { itemId: string; nameAr: string; nameEn?: string; price: number }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
@@ -223,7 +235,7 @@ export async function addItemExtra(data: { itemId: string; nameAr: string; nameE
 }
 
 export async function deleteItemExtra(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const extra = await prisma.itemExtra.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
@@ -237,7 +249,7 @@ export async function deleteItemExtra(id: string): Promise<ActionResult> {
 // ═══════════════ Item Images ═══════════════
 
 export async function addItemImage(data: { itemId: string; imageUrl: string }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({ where: { id: data.itemId }, include: { category: true } });
@@ -261,7 +273,7 @@ export async function addItemImage(data: { itemId: string; imageUrl: string }): 
 }
 
 export async function deleteItemImage(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const image = await prisma.itemImage.findUnique({ where: { id }, include: { item: { include: { category: true } } } });
@@ -275,7 +287,7 @@ export async function deleteItemImage(id: string): Promise<ActionResult> {
 // ═══════════════ Copy & Reorder ═══════════════
 
 export async function copyItem(itemId: string): Promise<ActionResult & { id?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const item = await prisma.item.findUnique({
@@ -329,7 +341,7 @@ export async function copyItem(itemId: string): Promise<ActionResult & { id?: st
 }
 
 export async function copyCategory(categoryId: string): Promise<ActionResult & { id?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const category = await prisma.category.findUnique({
@@ -393,7 +405,7 @@ export async function copyCategory(categoryId: string): Promise<ActionResult & {
 }
 
 export async function reorderItems(items: { id: string; sortOrder: number }[]): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   // Verify ownership of at least the first item

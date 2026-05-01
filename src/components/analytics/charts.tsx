@@ -55,40 +55,38 @@ export default function AnalyticsCharts({ data }: { data: ChartData }) {
     العدد: e.count,
   }));
 
-  // Export to Excel
+  // Export to Excel (using ExcelJS — no known CVEs)
   const handleExportExcel = useCallback(async () => {
-    const XLSX = await import("xlsx");
-    const wb = XLSX.utils.book_new();
+    const ExcelJS = await import("exceljs");
+    const wb = new ExcelJS.Workbook();
 
     // Sheet 1: Summary
-    const summaryData = [
-      ["المقياس", "القيمة"],
-      ["إيرادات الشهر", data.monthRevenue],
-      ["طلبات اليوم", data.todayOrders],
-      ["طلبات الأسبوع", data.weekOrders],
-      ["طلبات الشهر", data.monthOrders],
-      ["متوسط قيمة الطلب", data.avgOrderValue],
-    ];
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, ws1, "ملخص");
+    const ws1 = wb.addWorksheet("ملخص");
+    ws1.addRow(["المقياس", "القيمة"]);
+    ws1.addRow(["إيرادات الشهر", data.monthRevenue]);
+    ws1.addRow(["طلبات اليوم", data.todayOrders]);
+    ws1.addRow(["طلبات الأسبوع", data.weekOrders]);
+    ws1.addRow(["طلبات الشهر", data.monthOrders]);
+    ws1.addRow(["متوسط قيمة الطلب", data.avgOrderValue]);
 
     // Sheet 2: Top Items
-    const itemsData = [
-      ["الصنف", "الكمية", "الإيرادات"],
-      ...data.topItems.map((i) => [i.name, i.count, i.revenue]),
-    ];
-    const ws2 = XLSX.utils.aoa_to_sheet(itemsData);
-    XLSX.utils.book_append_sheet(wb, ws2, "الأصناف");
+    const ws2 = wb.addWorksheet("الأصناف");
+    ws2.addRow(["الصنف", "الكمية", "الإيرادات"]);
+    data.topItems.forEach((i) => ws2.addRow([i.name, i.count, i.revenue]));
 
     // Sheet 3: Order Status
-    const statusData = [
-      ["الحالة", "العدد"],
-      ...data.ordersByStatus.map((s) => [statusLabels[s.status] || s.status, s.count]),
-    ];
-    const ws3 = XLSX.utils.aoa_to_sheet(statusData);
-    XLSX.utils.book_append_sheet(wb, ws3, "حالات الطلبات");
+    const ws3 = wb.addWorksheet("حالات الطلبات");
+    ws3.addRow(["الحالة", "العدد"]);
+    data.ordersByStatus.forEach((s) => ws3.addRow([statusLabels[s.status] || s.status, s.count]));
 
-    XLSX.writeFile(wb, `analytics_report_${new Date().toISOString().split("T")[0]}.xlsx`);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `analytics_report_${new Date().toISOString().split("T")[0]}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, [data]);
 
   // Export to PDF

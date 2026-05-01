@@ -1,26 +1,28 @@
 // src/actions/table.ts
 "use server";
 
-import { auth } from "@/auth";
+import { getAuthUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { createTableSchema, updateTableSchema, bulkCreateTablesSchema } from "@/validators/table";
 import type { ActionResult } from "./auth";
 
-async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as { id: string; role?: string };
-}
-
-async function canManageTables(user: { id: string; role?: string }, restaurantId: string) {
+async function canManageTables(user: { id: string; role: string }, restaurantId: string) {
   if (user.role === "ADMIN") return true;
   const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
   if (!restaurant) return false;
   return restaurant.userId === user.id && restaurant.ownerCanManageTables;
 }
 
-// ─── Get tables ───
 export async function getTables(restaurantId: string) {
+  const user = await getAuthUser();
+  if (!user) return [];
+
+  // Verify user has access
+  if (user.role !== "ADMIN") {
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { userId: true } });
+    if (!restaurant || restaurant.userId !== user.id) return [];
+  }
+
   return prisma.table.findMany({
     where: { restaurantId },
     include: {
@@ -32,7 +34,7 @@ export async function getTables(restaurantId: string) {
 
 // ─── Create single table ───
 export async function createTable(data: { restaurantId: string; tableNumber: string }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
   if (!(await canManageTables(user, data.restaurantId))) return { success: false, error: "لا تملك صلاحية إدارة الطاولات" };
 
@@ -50,7 +52,7 @@ export async function createTable(data: { restaurantId: string; tableNumber: str
 
 // ─── Bulk create tables ───
 export async function bulkCreateTables(data: { restaurantId: string; count: number; startNumber?: number }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
   if (!(await canManageTables(user, data.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
 
@@ -70,7 +72,7 @@ export async function bulkCreateTables(data: { restaurantId: string; count: numb
 
 // ─── Update table ───
 export async function updateTable(id: string, data: { tableNumber?: string; isActive?: boolean }): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const table = await prisma.table.findUnique({ where: { id } });
@@ -86,7 +88,7 @@ export async function updateTable(id: string, data: { tableNumber?: string; isAc
 
 // ─── Delete table ───
 export async function deleteTable(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const table = await prisma.table.findUnique({ where: { id } });
@@ -99,7 +101,7 @@ export async function deleteTable(id: string): Promise<ActionResult> {
 
 // ─── Generate QR URL for table ───
 export async function generateTableQrUrl(id: string): Promise<ActionResult & { url?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const table = await prisma.table.findUnique({

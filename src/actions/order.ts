@@ -1,17 +1,11 @@
 // src/actions/order.ts
 "use server";
 
-import { auth } from "@/auth";
+import { getAuthUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
-import { updateOrderStatusSchema, createOrderSchema } from "@/validators/order";
+import { updateOrderStatusSchema } from "@/validators/order";
 import { OrderStatusFlow } from "@/types";
 import type { ActionResult } from "./auth";
-
-async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as { id: string; role?: string };
-}
 
 // ─── Get orders (with filters) ───
 export async function getOrders(filters?: {
@@ -20,7 +14,7 @@ export async function getOrders(filters?: {
   limit?: number;
   offset?: number;
 }) {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { orders: [], total: 0 };
 
   const where: Record<string, unknown> = {};
@@ -60,7 +54,7 @@ export async function getOrders(filters?: {
 
 // ─── Get single order ───
 export async function getOrder(id: string) {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const order = await prisma.order.findUnique({
@@ -85,7 +79,7 @@ export async function getOrder(id: string) {
 
 // ─── Update order status ───
 export async function updateOrderStatus(orderId: string, newStatus: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const validated = updateOrderStatusSchema.safeParse({ orderId, status: newStatus });
@@ -289,7 +283,7 @@ export async function createOrder(data: {
 
 // ─── Get order stats for dashboard ───
 export async function getOrderStats(restaurantId?: string) {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const where: Record<string, unknown> = {};
@@ -340,7 +334,7 @@ export async function getOrderStats(restaurantId?: string) {
 
 // ─── Delete order ───
 export async function deleteOrder(orderId: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   getCategories, createCategory, updateCategory, deleteCategory,
   createItem, updateItem, deleteItem, toggleItemAvailability,
@@ -114,9 +115,9 @@ export default function MenuManagementPage() {
         <Store style={{ width: 56, height: 56, color: "#d1d5db", margin: "0 auto 16px" }} />
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#374151", margin: "0 0 8px" }}>لا توجد مطاعم</h2>
         <p style={{ fontSize: 14, color: "#9ca3af", margin: "0 0 24px" }}>أضف مطعم أولاً لتتمكن من إدارة المنيو</p>
-        <a href="/dashboard/restaurants/create" style={{ ...btnPrimary, display: "inline-flex", textDecoration: "none" }}>
+        <Link href="/dashboard/restaurants/create" style={{ ...btnPrimary, display: "inline-flex", textDecoration: "none" }}>
           <Plus style={{ width: 16, height: 16 }} /> إضافة مطعم
-        </a>
+        </Link>
       </div>
     );
   }
@@ -196,11 +197,21 @@ export default function MenuManagementPage() {
             if (!selectedRestaurant) return;
             const res = await fetch(`/api/menu/export?restaurantId=${selectedRestaurant}`);
             const data = await res.json();
-            const XLSX = await import("xlsx");
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(data.exportData);
-            XLSX.utils.book_append_sheet(wb, ws, "المنيو");
-            XLSX.writeFile(wb, `menu_export_${new Date().toISOString().split("T")[0]}.xlsx`);
+            const ExcelJS = await import("exceljs");
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet("المنيو");
+            if (data.exportData.length > 0) {
+              ws.addRow(Object.keys(data.exportData[0]));
+              data.exportData.forEach((row: Record<string, unknown>) => ws.addRow(Object.values(row)));
+            }
+            const buf = await wb.xlsx.writeBuffer();
+            const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `menu_export_${new Date().toISOString().split("T")[0]}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
           }}
           style={{ ...btnOutline, color: "#16a34a" }}
         >
@@ -211,11 +222,22 @@ export default function MenuManagementPage() {
           <input type="file" accept=".xlsx,.csv" style={{ display: "none" }} onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file || !selectedRestaurant) return;
-            const XLSX = await import("xlsx");
-            const data = await file.arrayBuffer();
-            const wb = XLSX.read(data);
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(ws);
+            const ExcelJS = await import("exceljs");
+            const wb = new ExcelJS.Workbook();
+            const arrayBuf = await file.arrayBuffer();
+            await wb.xlsx.load(arrayBuf);
+            const ws = wb.worksheets[0];
+            if (!ws || ws.rowCount < 2) { alert("الملف فارغ"); return; }
+            // Extract headers from row 1, data from remaining rows
+            const headers: string[] = [];
+            ws.getRow(1).eachCell((cell, colNumber) => { headers[colNumber - 1] = String(cell.value ?? ""); });
+            const jsonData: Record<string, unknown>[] = [];
+            ws.eachRow((row, rowNumber) => {
+              if (rowNumber === 1) return;
+              const obj: Record<string, unknown> = {};
+              row.eachCell((cell, colNumber) => { obj[headers[colNumber - 1]] = cell.value; });
+              jsonData.push(obj);
+            });
             if (jsonData.length === 0) { alert("الملف فارغ"); return; }
             if (!confirm(`سيتم استيراد ${jsonData.length} عنصر. متابعة؟`)) return;
             const res = await fetch("/api/menu/import", {

@@ -1,26 +1,19 @@
 // src/actions/restaurant.ts
 "use server";
 
-import { auth } from "@/auth";
+import { getAuthUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { createRestaurantSchema, updateRestaurantSchema, updatePermissionsSchema } from "@/validators/restaurant";
 import type { CreateRestaurantInput, UpdateRestaurantInput, UpdatePermissionsInput } from "@/validators/restaurant";
 import type { ActionResult } from "./auth";
 
-// ─── Helper: Get current user with role check ───
-async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as { id: string; role?: string };
-}
-
-function isAdmin(user: { role?: string }) {
+function isAdmin(user: { role: string }) {
   return user.role === "ADMIN";
 }
 
 // ─── Get all restaurants (Admin sees all, Owner sees own) ───
 export async function getRestaurants() {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   if (isAdmin(user)) {
@@ -44,7 +37,7 @@ export async function getRestaurants() {
 
 // ─── Get single restaurant ───
 export async function getRestaurant(id: string) {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const restaurant = await prisma.restaurant.findUnique({
@@ -70,7 +63,7 @@ export async function getRestaurant(id: string) {
 
 // ─── Create restaurant ───
 export async function createRestaurant(data: CreateRestaurantInput): Promise<ActionResult & { id?: string }> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user || !isAdmin(user)) {
     return { success: false, error: "غير مصرح لك بإنشاء مطعم" };
   }
@@ -97,7 +90,7 @@ export async function createRestaurant(data: CreateRestaurantInput): Promise<Act
 
 // ─── Update restaurant ───
 export async function updateRestaurant(id: string, data: UpdateRestaurantInput): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
 
   const restaurant = await prisma.restaurant.findUnique({ where: { id } });
@@ -127,7 +120,7 @@ export async function updateRestaurant(id: string, data: UpdateRestaurantInput):
 
 // ─── Toggle restaurant active status ───
 export async function toggleRestaurantStatus(id: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user || !isAdmin(user)) {
     return { success: false, error: "مسموح فقط للأدمن" };
   }
@@ -145,7 +138,7 @@ export async function toggleRestaurantStatus(id: string): Promise<ActionResult> 
 
 // ─── Update owner permissions (Admin only) ───
 export async function updateOwnerPermissions(id: string, data: UpdatePermissionsInput): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user || !isAdmin(user)) {
     return { success: false, error: "مسموح فقط للأدمن" };
   }
@@ -165,7 +158,7 @@ export async function updateOwnerPermissions(id: string, data: UpdatePermissions
 
 // ─── Delete restaurant (Admin only) — cascade delete everything ───
 export async function deleteRestaurant(id: string, confirmName: string): Promise<ActionResult> {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user || !isAdmin(user)) {
     return { success: false, error: "مسموح فقط للأدمن" };
   }

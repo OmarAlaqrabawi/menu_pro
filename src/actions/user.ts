@@ -2,18 +2,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdmin } from "@/lib/auth-guard";
 import { hash } from "bcryptjs";
 
 type ActionResult = { success: boolean; error?: string };
-
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (!user || user.role !== "ADMIN") return null;
-  return user;
-}
 
 // Get all users with their restaurants
 export async function getUsers() {

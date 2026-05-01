@@ -1,18 +1,12 @@
 // src/actions/analytics.ts
 "use server";
 
-import { auth } from "@/auth";
+import { getAuthUser } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
-
-async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return session.user as { id: string; role?: string };
-}
 
 // ─── Dashboard overview stats ───
 export async function getDashboardStats() {
-  const user = await getCurrentUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const isAdmin = user.role === "ADMIN";
