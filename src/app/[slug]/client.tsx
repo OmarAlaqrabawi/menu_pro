@@ -363,12 +363,16 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
 
   // Dark mode colors
   const dm = {
-    bg: darkMode ? "#0f0f1a" : "#f5f5f7",
-    card: darkMode ? "#1a1a2e" : "#fff",
-    text: darkMode ? "#f5f5f7" : "#111827",
-    textSec: darkMode ? "#9ca3af" : "#6b7280",
-    border: darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
-    inputBg: darkMode ? "#252540" : "#fafafa",
+    bg: darkMode ? "#0a0a14" : "#f5f5f7",
+    card: darkMode ? "#161625" : "#fff",
+    cardAlt: darkMode ? "#1e1e32" : "#f9fafb",
+    text: darkMode ? "#f0f0f5" : "#111827",
+    textSec: darkMode ? "#8a8a9a" : "#6b7280",
+    border: darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+    inputBg: darkMode ? "#1e1e32" : "#fafafa",
+    inputBorder: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+    sheet: darkMode ? "#12121f" : "#fff",
+    overlay: darkMode ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.5)",
   };
 
   const currentCategory = filteredCategories.find(c => c.id === activeCategory);
@@ -886,8 +890,8 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
       {cart.length > 0 && !showCart && !selectedItem && (
         <div style={{
           position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px",
-          background: "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(0,0,0,0.06)",
+          background: darkMode ? "rgba(18,18,31,0.95)" : "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          borderTop: `1px solid ${dm.border}`,
           animation: "fadeUp 0.3s ease-out",
         }}>
           <button
@@ -923,23 +927,22 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
       {/* ─── Item Detail Bottom Sheet ─── */}
       {selectedItem && (
         <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
-          <div onClick={() => setSelectedItem(null)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
-          <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+          <div onClick={() => setSelectedItem(null)} style={{ position: "absolute", inset: 0, background: dm.overlay, backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            background: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            background: dm.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             maxHeight: "82vh", overflowY: "auto", padding: "12px 20px 36px",
             animation: "sheetUp 0.35s cubic-bezier(0.32,0.72,0,1)",
             boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
           }}>
             {/* Drag handle */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#ddd", margin: "0 auto 16px" }} />
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: darkMode ? "rgba(255,255,255,0.15)" : "#ddd", margin: "0 auto 16px" }} />
             {/* Close */}
-            <button onClick={() => setSelectedItem(null)} style={{ position: "absolute", top: 20, left: 20, background: "#f3f4f6", border: "none", borderRadius: 12, padding: 8, cursor: "pointer", transition: "background 0.2s" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#e5e7eb"}
-              onMouseLeave={e => e.currentTarget.style.background = "#f3f4f6"}
+            <button onClick={() => setSelectedItem(null)} style={{ position: "absolute", top: 20, left: 20, background: darkMode ? "rgba(255,255,255,0.1)" : "#f3f4f6", border: "none", borderRadius: 12, padding: 8, cursor: "pointer", transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = darkMode ? "rgba(255,255,255,0.15)" : "#e5e7eb"}
+              onMouseLeave={e => e.currentTarget.style.background = darkMode ? "rgba(255,255,255,0.1)" : "#f3f4f6"}
             >
-              <X style={{ width: 18, height: 18, color: "#6b7280" }} />
+              <X style={{ width: 18, height: 18, color: dm.textSec }} />
             </button>
 
             {/* Product Images */}
@@ -962,13 +965,13 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
               </div>
             )}
 
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: "0 0 4px" }}>{selectedItem.nameAr}</h3>
-            {selectedItem.descAr && <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px", lineHeight: 1.6 }}>{selectedItem.descAr}</p>}
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: dm.text, margin: "0 0 4px" }}>{selectedItem.nameAr}</h3>
+            {selectedItem.descAr && <p style={{ fontSize: 13, color: dm.textSec, margin: "0 0 16px", lineHeight: 1.6 }}>{selectedItem.descAr}</p>}
 
             {/* Sizes */}
             {selectedItem.sizes.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: "0 0 10px" }}>الحجم</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: dm.text, margin: "0 0 10px" }}>الحجم</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {selectedItem.sizes.map(s => (
                     <button
@@ -976,9 +979,9 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                       onClick={() => setSelectedSize(s.id)}
                       style={{
                         padding: "8px 16px", borderRadius: 12,
-                        border: selectedSize === s.id ? `2px solid ${pc}` : "1px solid rgba(0,0,0,0.1)",
-                        background: selectedSize === s.id ? `${pc}10` : "#fafafa",
-                        color: selectedSize === s.id ? pc : "#374151",
+                        border: selectedSize === s.id ? `2px solid ${pc}` : `1px solid ${dm.inputBorder}`,
+                        background: selectedSize === s.id ? `${pc}10` : dm.inputBg,
+                        color: selectedSize === s.id ? pc : dm.text,
                         fontSize: 13, fontWeight: 600, cursor: "pointer",
                       }}
                     >
@@ -992,7 +995,7 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
             {/* Extras */}
             {selectedItem.extras.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: "0 0 10px" }}>إضافات</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: dm.text, margin: "0 0 10px" }}>إضافات</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {selectedItem.extras.map(e => {
                     const isSelected = selectedExtras.includes(e.id);
@@ -1003,8 +1006,8 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                         className="flex items-center justify-between"
                         style={{
                           padding: "10px 14px", borderRadius: 12, width: "100%",
-                          border: isSelected ? `2px solid ${pc}` : "1px solid rgba(0,0,0,0.08)",
-                          background: isSelected ? `${pc}10` : "#fafafa",
+                          border: isSelected ? `2px solid ${pc}` : `1px solid ${dm.inputBorder}`,
+                          background: isSelected ? `${pc}10` : dm.inputBg,
                           cursor: "pointer", textAlign: "right",
                         }}
                       >
@@ -1017,7 +1020,7 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                           }}>
                             {isSelected && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{e.nameAr}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: dm.text }}>{e.nameAr}</span>
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 600, color: pc }}>+{e.price} {currency}</span>
                       </button>
@@ -1029,13 +1032,13 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
 
             {/* Quantity + Add */}
             <div className="flex items-center gap-4" style={{ marginTop: 20 }}>
-              <div className="flex items-center" style={{ background: "#f3f4f6", borderRadius: 12, overflow: "hidden" }}>
+              <div className="flex items-center" style={{ background: dm.inputBg, borderRadius: 12, overflow: "hidden" }}>
                 <button onClick={() => setItemQty(Math.max(1, itemQty - 1))} style={{ padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer" }}>
-                  <Minus style={{ width: 16, height: 16, color: "#6b7280" }} />
+                  <Minus style={{ width: 16, height: 16, color: dm.textSec }} />
                 </button>
-                <span style={{ padding: "0 12px", fontSize: 16, fontWeight: 700, color: "#111827", minWidth: 24, textAlign: "center" }}>{itemQty}</span>
+                <span style={{ padding: "0 12px", fontSize: 16, fontWeight: 700, color: dm.text, minWidth: 24, textAlign: "center" }}>{itemQty}</span>
                 <button onClick={() => setItemQty(itemQty + 1)} style={{ padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer" }}>
-                  <Plus style={{ width: 16, height: 16, color: "#6b7280" }} />
+                  <Plus style={{ width: 16, height: 16, color: dm.textSec }} />
                 </button>
               </div>
               <button
@@ -1066,28 +1069,28 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
       {/* ─── Cart Bottom Sheet ─── */}
       {showCart && (
         <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
-          <div onClick={() => setShowCart(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
+          <div onClick={() => setShowCart(false)} style={{ position: "absolute", inset: 0, background: dm.overlay, backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            background: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            background: dm.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             maxHeight: "85vh", overflowY: "auto", padding: "12px 20px 36px",
             animation: "sheetUp 0.35s cubic-bezier(0.32,0.72,0,1)",
             boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
           }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#ddd", margin: "0 auto 16px" }} />
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: darkMode ? "rgba(255,255,255,0.15)" : "#ddd", margin: "0 auto 16px" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>سلة الطلبات</h3>
-              <button onClick={() => setShowCart(false)} style={{ background: "#f3f4f6", border: "none", borderRadius: 12, padding: 8, cursor: "pointer" }}>
-                <X style={{ width: 18, height: 18, color: "#6b7280" }} />
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: dm.text, margin: 0 }}>سلة الطلبات</h3>
+              <button onClick={() => setShowCart(false)} style={{ background: darkMode ? "rgba(255,255,255,0.1)" : "#f3f4f6", border: "none", borderRadius: 12, padding: 8, cursor: "pointer" }}>
+                <X style={{ width: 18, height: 18, color: dm.textSec }} />
               </button>
             </div>
 
             {/* Items */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               {cart.map((item, i) => (
-                <div key={i} className="flex items-center justify-between" style={{ padding: "12px 14px", borderRadius: 14, background: "#f9fafb" }}>
+                <div key={i} className="flex items-center justify-between" style={{ padding: "12px 14px", borderRadius: 14, background: dm.cardAlt }}>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#111827", margin: 0 }}>{item.itemName}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: dm.text, margin: 0 }}>{item.itemName}</p>
                     {item.sizeName && <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{item.sizeName}</p>}
                     {item.extras && item.extras.length > 0 && (
                       <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>+ {item.extras.join(", ")}</p>
@@ -1095,12 +1098,12 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                     <p style={{ fontSize: 13, fontWeight: 700, color: pc, margin: "4px 0 0" }}>{(item.unitPrice * item.quantity).toFixed(2)} {currency}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => updateCartQty(i, -1)} style={{ padding: 6, border: "none", background: "#e5e7eb", borderRadius: 6, cursor: "pointer" }}>
-                      <Minus style={{ width: 12, height: 12, color: "#6b7280" }} />
+                    <button onClick={() => updateCartQty(i, -1)} style={{ padding: 6, border: "none", background: darkMode ? "rgba(255,255,255,0.1)" : "#e5e7eb", borderRadius: 6, cursor: "pointer" }}>
+                      <Minus style={{ width: 12, height: 12, color: dm.textSec }} />
                     </button>
                     <span style={{ padding: "0 8px", fontSize: 14, fontWeight: 700 }}>{item.quantity}</span>
-                    <button onClick={() => updateCartQty(i, 1)} style={{ padding: 6, border: "none", background: "#e5e7eb", borderRadius: 6, cursor: "pointer" }}>
-                      <Plus style={{ width: 12, height: 12, color: "#6b7280" }} />
+                    <button onClick={() => updateCartQty(i, 1)} style={{ padding: 6, border: "none", background: darkMode ? "rgba(255,255,255,0.1)" : "#e5e7eb", borderRadius: 6, cursor: "pointer" }}>
+                      <Plus style={{ width: 12, height: 12, color: dm.textSec }} />
                     </button>
                     <button onClick={() => removeFromCart(i)} style={{ padding: 6, border: "none", background: "transparent", cursor: "pointer" }}>
                       <Trash2 style={{ width: 14, height: 14, color: "#dc2626" }} />
@@ -1113,17 +1116,17 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
             {/* Totals */}
             <div style={{ padding: "16px 0", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
               <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 14, color: "#6b7280" }}>المجموع</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{cartTotal.toFixed(2)} {currency}</span>
+                <span style={{ fontSize: 14, color: dm.textSec }}>المجموع</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: dm.text }}>{cartTotal.toFixed(2)} {currency}</span>
               </div>
               {restaurant!.taxPercent > 0 && (
                 <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, color: "#6b7280" }}>الضريبة ({restaurant!.taxPercent}%)</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{(cartTotal * restaurant!.taxPercent / 100).toFixed(2)} {currency}</span>
+                  <span style={{ fontSize: 14, color: dm.textSec }}>الضريبة ({restaurant!.taxPercent}%)</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: dm.text }}>{(cartTotal * restaurant!.taxPercent / 100).toFixed(2)} {currency}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between" style={{ paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>الإجمالي</span>
+              <div className="flex items-center justify-between" style={{ paddingTop: 8, borderTop: `1px solid ${dm.border}` }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: dm.text }}>الإجمالي</span>
                 <span style={{ fontSize: 18, fontWeight: 800, color: pc }}>
                   {(cartTotal + cartTotal * restaurant!.taxPercent / 100 + cartTotal * restaurant!.servicePercent / 100).toFixed(2)} {currency}
                 </span>
@@ -1149,21 +1152,21 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
       {/* ─── Order Form ─── */}
       {showOrderForm && (
         <div style={{ position: "fixed", inset: 0, zIndex: 100 }}>
-          <div onClick={() => setShowOrderForm(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
+          <div onClick={() => setShowOrderForm(false)} style={{ position: "absolute", inset: 0, background: dm.overlay, backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            background: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            background: dm.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             maxHeight: "82vh", overflowY: "auto", padding: "12px 20px 36px",
             animation: "sheetUp 0.35s cubic-bezier(0.32,0.72,0,1)",
             boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
           }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#ddd", margin: "0 auto 16px" }} />
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: "0 0 20px" }}>تأكيد الطلب</h3>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: darkMode ? "rgba(255,255,255,0.15)" : "#ddd", margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: dm.text, margin: "0 0 20px" }}>تأكيد الطلب</h3>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* Order Type */}
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>نوع الطلب</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: dm.text, margin: "0 0 8px" }}>نوع الطلب</p>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
                     { value: "DINE_IN", label: "🍽️ محلي" },
@@ -1174,9 +1177,9 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
                       onClick={() => setOrderType(t.value)}
                       style={{
                         flex: 1, padding: "10px", borderRadius: 12, cursor: "pointer",
-                        border: orderType === t.value ? `2px solid ${pc}` : "1px solid rgba(0,0,0,0.1)",
-                        background: orderType === t.value ? `${pc}10` : "#fafafa",
-                        color: orderType === t.value ? pc : "#6b7280",
+                        border: orderType === t.value ? `2px solid ${pc}` : `1px solid ${dm.inputBorder}`,
+                        background: orderType === t.value ? `${pc}10` : dm.inputBg,
+                        color: orderType === t.value ? pc : dm.textSec,
                         fontSize: 14, fontWeight: 600,
                       }}
                     >
@@ -1187,9 +1190,9 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>الاسم (اختياري)</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: dm.text, display: "block", marginBottom: 4 }}>الاسم (اختياري)</label>
                 <input
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, background: "#fafafa", outline: "none" }}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${dm.inputBorder}`, fontSize: 14, background: dm.inputBg, color: dm.text, outline: "none" }}
                   placeholder="اسمك"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
@@ -1198,9 +1201,9 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>رقم الجوال (اختياري)</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: dm.text, display: "block", marginBottom: 4 }}>رقم الجوال (اختياري)</label>
                 <input
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, background: "#fafafa", outline: "none" }}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${dm.inputBorder}`, fontSize: 14, background: dm.inputBg, color: dm.text, outline: "none" }}
                   placeholder="05xxxxxxxx"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
@@ -1209,9 +1212,9 @@ export default function CustomerMenuClient({ slug }: { slug: string }) {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>ملاحظات</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: dm.text, display: "block", marginBottom: 4 }}>ملاحظات</label>
                 <textarea
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, background: "#fafafa", outline: "none", minHeight: 60, resize: "vertical" }}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${dm.inputBorder}`, fontSize: 14, background: dm.inputBg, color: dm.text, outline: "none", minHeight: 60, resize: "vertical" }}
                   placeholder="بدون بصل، مثلاً"
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
