@@ -176,10 +176,15 @@ export default function RestaurantsPage() {
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) {
+      if (!res.ok) {
+        alert("خطأ في رفع الصورة: " + (data.error || res.statusText));
+      } else if (data.url) {
         setEditForm(prev => ({ ...prev, logoUrl: data.url }));
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      alert("فشل رفع الصورة — تأكد من الاتصال بالإنترنت");
+      console.error("Upload error:", err);
+    }
     setUploadingLogo(false);
     e.target.value = "";
   }
