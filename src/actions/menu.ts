@@ -285,41 +285,45 @@ export async function copyItem(itemId: string): Promise<ActionResult & { id?: st
   if (!item) return { success: false, error: "العنصر غير موجود" };
   if (!(await canEditMenu(user, item.category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
 
-  const maxOrder = await prisma.item.findFirst({
-    where: { categoryId: item.categoryId },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
-  });
-
-  const newItem = await prisma.item.create({
-    data: {
-      categoryId: item.categoryId,
-      nameAr: item.nameAr + " (نسخة)",
-      nameEn: item.nameEn,
-      descAr: item.descAr,
-      price: item.price,
-      discountPrice: item.discountPrice,
-      badge: item.badge,
-      calories: item.calories,
-      prepTime: item.prepTime,
-      isAvailable: item.isAvailable,
-      sortOrder: (maxOrder?.sortOrder ?? 0) + 1,
-    },
-  });
-
-  // Copy sizes
-  for (const size of item.sizes) {
-    await prisma.itemSize.create({
-      data: { itemId: newItem.id, nameAr: size.nameAr, nameEn: size.nameEn, price: size.price, sortOrder: size.sortOrder },
+  const newItem = await prisma.$transaction(async (tx) => {
+    const maxOrder = await tx.item.findFirst({
+      where: { categoryId: item.categoryId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
     });
-  }
 
-  // Copy extras
-  for (const extra of item.extras) {
-    await prisma.itemExtra.create({
-      data: { itemId: newItem.id, nameAr: extra.nameAr, nameEn: extra.nameEn, price: extra.price, sortOrder: extra.sortOrder },
+    const created = await tx.item.create({
+      data: {
+        categoryId: item.categoryId,
+        nameAr: item.nameAr + " (نسخة)",
+        nameEn: item.nameEn,
+        descAr: item.descAr,
+        price: item.price,
+        discountPrice: item.discountPrice,
+        badge: item.badge,
+        calories: item.calories,
+        prepTime: item.prepTime,
+        isAvailable: item.isAvailable,
+        sortOrder: (maxOrder?.sortOrder ?? 0) + 1,
+      },
     });
-  }
+
+    // Copy sizes
+    if (item.sizes.length > 0) {
+      await tx.itemSize.createMany({
+        data: item.sizes.map(s => ({ itemId: created.id, nameAr: s.nameAr, nameEn: s.nameEn, price: s.price, sortOrder: s.sortOrder })),
+      });
+    }
+
+    // Copy extras
+    if (item.extras.length > 0) {
+      await tx.itemExtra.createMany({
+        data: item.extras.map(e => ({ itemId: created.id, nameAr: e.nameAr, nameEn: e.nameEn, price: e.price, sortOrder: e.sortOrder })),
+      });
+    }
+
+    return created;
+  });
 
   return { success: true, id: newItem.id };
 }
@@ -335,51 +339,55 @@ export async function copyCategory(categoryId: string): Promise<ActionResult & {
   if (!category) return { success: false, error: "القسم غير موجود" };
   if (!(await canEditMenu(user, category.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
 
-  const maxOrder = await prisma.category.findFirst({
-    where: { restaurantId: category.restaurantId },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
-  });
+  const newCategory = await prisma.$transaction(async (tx) => {
+    const maxOrder = await tx.category.findFirst({
+      where: { restaurantId: category.restaurantId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
 
-  const newCategory = await prisma.category.create({
-    data: {
-      restaurantId: category.restaurantId,
-      nameAr: category.nameAr + " (نسخة)",
-      nameEn: category.nameEn,
-      emoji: category.emoji,
-      sortOrder: (maxOrder?.sortOrder ?? 0) + 1,
-    },
-  });
-
-  // Copy all items in category
-  for (const item of category.items) {
-    const newItem = await prisma.item.create({
+    const created = await tx.category.create({
       data: {
-        categoryId: newCategory.id,
-        nameAr: item.nameAr,
-        nameEn: item.nameEn,
-        descAr: item.descAr,
-        price: item.price,
-        discountPrice: item.discountPrice,
-        badge: item.badge,
-        calories: item.calories,
-        prepTime: item.prepTime,
-        isAvailable: item.isAvailable,
-        sortOrder: item.sortOrder,
+        restaurantId: category.restaurantId,
+        nameAr: category.nameAr + " (نسخة)",
+        nameEn: category.nameEn,
+        emoji: category.emoji,
+        sortOrder: (maxOrder?.sortOrder ?? 0) + 1,
       },
     });
 
-    for (const size of item.sizes) {
-      await prisma.itemSize.create({
-        data: { itemId: newItem.id, nameAr: size.nameAr, nameEn: size.nameEn, price: size.price, sortOrder: size.sortOrder },
+    // Copy all items in category
+    for (const item of category.items) {
+      const newItem = await tx.item.create({
+        data: {
+          categoryId: created.id,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn,
+          descAr: item.descAr,
+          price: item.price,
+          discountPrice: item.discountPrice,
+          badge: item.badge,
+          calories: item.calories,
+          prepTime: item.prepTime,
+          isAvailable: item.isAvailable,
+          sortOrder: item.sortOrder,
+        },
       });
+
+      if (item.sizes.length > 0) {
+        await tx.itemSize.createMany({
+          data: item.sizes.map(s => ({ itemId: newItem.id, nameAr: s.nameAr, nameEn: s.nameEn, price: s.price, sortOrder: s.sortOrder })),
+        });
+      }
+      if (item.extras.length > 0) {
+        await tx.itemExtra.createMany({
+          data: item.extras.map(e => ({ itemId: newItem.id, nameAr: e.nameAr, nameEn: e.nameEn, price: e.price, sortOrder: e.sortOrder })),
+        });
+      }
     }
-    for (const extra of item.extras) {
-      await prisma.itemExtra.create({
-        data: { itemId: newItem.id, nameAr: extra.nameAr, nameEn: extra.nameEn, price: extra.price, sortOrder: extra.sortOrder },
-      });
-    }
-  }
+
+    return created;
+  });
 
   return { success: true, id: newCategory.id };
 }

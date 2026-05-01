@@ -99,11 +99,15 @@ export async function deleteTable(id: string): Promise<ActionResult> {
 
 // ─── Generate QR URL for table ───
 export async function generateTableQrUrl(id: string): Promise<ActionResult & { url?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "يرجى تسجيل الدخول" };
+
   const table = await prisma.table.findUnique({
     where: { id },
-    include: { restaurant: { select: { slug: true } } },
+    include: { restaurant: { select: { slug: true, userId: true } } },
   });
   if (!table) return { success: false, error: "الطاولة غير موجودة" };
+  if (!(await canManageTables(user, table.restaurantId))) return { success: false, error: "لا تملك صلاحية" };
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const qrUrl = `${appUrl}/${table.restaurant.slug}?table=${table.tableNumber}`;

@@ -18,6 +18,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
 
+  if (items.length > 500) {
+    return NextResponse.json({ error: "الحد الأقصى 500 عنصر في الاستيراد الواحد" }, { status: 400 });
+  }
+
   // Verify permission
   const user = session.user as { id: string; role?: string };
   if (user.role !== "ADMIN") {

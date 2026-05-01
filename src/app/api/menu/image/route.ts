@@ -17,6 +17,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
 
+    // Verify ownership: item → category → restaurant → user
+    const user = session.user as { id: string; role?: string };
+    const item = await prisma.item.findUnique({
+      where: { id: itemId },
+      include: { category: { include: { restaurant: { select: { userId: true } } } } },
+    });
+    if (!item) {
+      return NextResponse.json({ error: "item not found" }, { status: 404 });
+    }
+    if (user.role !== "ADMIN" && item.category.restaurant.userId !== user.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
     // Get max sort order
     const last = await prisma.itemImage.findFirst({
       where: { itemId },

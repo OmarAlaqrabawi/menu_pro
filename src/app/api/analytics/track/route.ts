@@ -10,8 +10,33 @@ const VALID_EVENTS = [
   "ITEM_ADD_TO_CART", "ORDER_PLACED", "QR_SCAN",
 ];
 
+// ── Rate Limiting (30 events per minute per IP) ──
+const analyticsRateMap = new Map<string, { count: number; resetAt: number }>();
+const ANALYTICS_RATE_LIMIT = 30;
+const ANALYTICS_RATE_WINDOW = 60_000;
+
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+    const now = Date.now();
+    const rateEntry = analyticsRateMap.get(ip);
+    if (rateEntry && rateEntry.resetAt > now) {
+      if (rateEntry.count >= ANALYTICS_RATE_LIMIT) {
+        return NextResponse.json({ ok: true }); // Silent drop — don't reveal rate limiting
+      }
+      rateEntry.count++;
+    } else {
+      analyticsRateMap.set(ip, { count: 1, resetAt: now + ANALYTICS_RATE_WINDOW });
+    }
+    // Cleanup stale entries
+    if (analyticsRateMap.size > 5000) {
+      for (const [key, val] of analyticsRateMap) {
+        if (val.resetAt <= now) analyticsRateMap.delete(key);
+      }
+    }
+
     const body = await request.json();
     const { restaurantId, eventType, categoryId, itemId } = body;
 
@@ -42,3 +67,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "tracking failed" }, { status: 500 });
   }
 }
+

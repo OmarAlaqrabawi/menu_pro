@@ -15,6 +15,7 @@ function createPrismaClient() {
   const pool = new Pool({
     connectionString: connStr,
     ssl: { rejectUnauthorized: isProduction },
+    max: 5,
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });

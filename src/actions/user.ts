@@ -44,6 +44,10 @@ export async function createUser(data: {
     return { success: false, error: "جميع الحقول مطلوبة" };
   }
 
+  if (!["ADMIN", "RESTAURANT_OWNER", "STAFF"].includes(data.role)) {
+    return { success: false, error: "دور غير صالح" };
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) {
     return { success: false, error: "البريد الإلكتروني مستخدم مسبقاً" };
@@ -177,8 +181,14 @@ export async function resetUserPassword(userId: string, newPassword: string): Pr
   const admin = await requireAdmin();
   if (!admin) return { success: false, error: "ليس لديك صلاحية" };
 
-  if (!newPassword || newPassword.length < 6) {
-    return { success: false, error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" };
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
+  }
+  if (!/[A-Z]/.test(newPassword)) {
+    return { success: false, error: "يجب أن تحتوي على حرف كبير" };
+  }
+  if (!/[0-9]/.test(newPassword)) {
+    return { success: false, error: "يجب أن تحتوي على رقم" };
   }
 
   const passwordHash = await hash(newPassword, 10);

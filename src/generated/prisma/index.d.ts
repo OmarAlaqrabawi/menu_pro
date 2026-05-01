@@ -27228,6 +27228,7 @@ export namespace Prisma {
 
   export type OrderWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    restaurantId_orderNumber?: OrderRestaurantIdOrderNumberCompoundUniqueInput
     AND?: OrderWhereInput | OrderWhereInput[]
     OR?: OrderWhereInput[]
     NOT?: OrderWhereInput | OrderWhereInput[]
@@ -27252,7 +27253,7 @@ export namespace Prisma {
     restaurant?: XOR<RestaurantScalarRelationFilter, RestaurantWhereInput>
     table?: XOR<TableNullableScalarRelationFilter, TableWhereInput> | null
     items?: OrderItemListRelationFilter
-  }, "id">
+  }, "id" | "restaurantId_orderNumber">
 
   export type OrderOrderByWithAggregationInput = {
     id?: SortOrder
@@ -30877,6 +30878,11 @@ export namespace Prisma {
   export type TableNullableScalarRelationFilter = {
     is?: TableWhereInput | null
     isNot?: TableWhereInput | null
+  }
+
+  export type OrderRestaurantIdOrderNumberCompoundUniqueInput = {
+    restaurantId: string
+    orderNumber: number
   }
 
   export type OrderCountOrderByAggregateInput = {

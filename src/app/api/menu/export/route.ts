@@ -17,6 +17,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "restaurantId required" }, { status: 400 });
   }
 
+  // Verify ownership or admin role
+  const user = session.user as { id: string; role?: string };
+  if (user.role !== "ADMIN") {
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
+    if (!restaurant || restaurant.userId !== user.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+  }
+
   const categories = await prisma.category.findMany({
     where: { restaurantId },
     include: {

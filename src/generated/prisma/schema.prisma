@@ -350,6 +350,7 @@ model Order {
   table      Table?      @relation(fields: [tableId], references: [id])
   items      OrderItem[]
 
+  @@unique([restaurantId, orderNumber])
   @@index([restaurantId])
   @@index([restaurantId, status])
   @@index([restaurantId, createdAt])

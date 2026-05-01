@@ -24,7 +24,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("[AUTH] Missing credentials");
             return null;
           }
 
